@@ -2,9 +2,8 @@
 (require parser-tools/lex
          (prefix-in : parser-tools/lex-sre)
          parser-tools/yacc
-         )
-(define ... (void)) ;; indicates a part to be implemented
-
+         (prefix-in stx: "syntax.rkt"))
+(provide parse-string parse-file)
 
 (define-tokens tokens-with-value
   (NUM ID))
@@ -84,117 +83,127 @@
    (tokens tokens-with-value tokens-without-value)
    (grammar
     (program
-     ((external-declaration) ...)
-     ((program external-declaration) ...))
+     ((external-declaration) $1)
+     ((program external-declaration) (stx:program $1 $2 $1-start-pos)))
     (external-declaration
-     ((declaration) ...)
-     ((function-prototype) ...)
-     ((function-definition) ...))
+     ((declaration) $1)
+     ((function-prototype) $1)
+     ((function-definition) $1))
     (declaration
-     ((type-specifier declarator-list SEMI) ...))
+     ((type-specifier declarator-list SEMI) (stx:decl $1 $2 $1-start-pos)))
     (declarator-list
-     ((declarator) ...)
-     ((declarator-list COMMA declarator) ...))
+     ((declarator) (list $1))
+     ((declarator-list COMMA declarator) '($1 $3)))
     (declarator
-     ((direct-declarator) ...)
-     ((* direct-declarator) ...))
+     ((direct-declarator) $1)
+     ((* direct-declarator) (stx:pt-decl $2 $2-start-pos)))
     (direct-declarator
-     ((ID) ...)
-     ((ID LBBRA NUM RBBRA) ...))
+     ((ID) (stx:dir-decl $1 $1-start-pos))
+     ((ID LBBRA NUM RBBRA) (stx:arr-decl $1 $3 $1-start-pos)))
     (function-prototype
-     ((type-specifier function-declarator SEMI) ...))
+     ((type-specifier function-declarator SEMI) (stx:prot-decl $1 $2 $1-start-pos)))
     (function-declarator
-     ((ID LPAR parameter-type-list-opt RPAR) ...)
-     ((* ID LPAR parameter-type-list-opt RPAR) ...))
+     ((ID LPAR parameter-type-list-opt RPAR) (stx:func-decl $1 $3 $1-start-pos))
+     ((* ID LPAR parameter-type-list-opt RPAR) (stx:pt-func-decl $2 $4 $2-start-pos)))
     (function-definition
-     ((type-specifier function-declarator compound-statement) ...))
+     ((type-specifier function-declarator compound-statement) (stx:func-def $1 $2 $3 $1-start-pos)))
     (parameter-type-list-opt
-     (() ...)
-     ((parameter-type-list) ...))
+     (() '())
+     ((parameter-type-list) $1))
     (parameter-type-list
-     ((parameter-declaration) ...)
-     ((parameter-type-list COMMA parameter-declaration) ...))
+     ((parameter-declaration) (list $1))
+     ((parameter-type-list COMMA parameter-declaration) '($1 $3)))
     (parameter-declaration
-     ((type-specifier parameter-declarator) ...))
+     ((type-specifier parameter-declarator) (stx:parm-decl $1 $2 $1-start-pos)))
     (parameter-declarator
-     ((ID) ...)
-     ((* ID) ...))
+     ((ID) (stx:parm-name $1 $1-start-pos))
+     ((* ID) (stx:pt-parm-name $2 $1-start-pos)))
     (type-specifier
-     ((INT) ...)
-     ((VOID) ... ))
+     ((INT) (stx:int-ty $1-start-pos))
+     ((VOID) (stx:void-ty $1-start-pos)))
     (statement
-     ((SEMI) ...)
-     ((expression SEMI) ...)
-     ((compound-statement) ...)
-     ((IF LPAR expression RPAR statement) ...)
-     ((IF LPAR expression RPAR statement ELSE statement) ...)
-     ((WHILE LPAR expression RPAR statement) ...)
+     ((SEMI) '())
+     ((expression SEMI) $1)
+     ((compound-statement) $1)
+     ((IF LPAR expression RPAR statement) (stx:if-stmt $3 $5 $1-start-pos))
+     ((IF LPAR expression RPAR statement ELSE statement) (stx:if-else-stmt $3 $5 $7 $1-start-pos))
+     ((WHILE LPAR expression RPAR statement) (stx:while-stmt $3 $5 $1-start-pos))
      ((FOR LPAR expression-opt SEMI expression-opt
-           SEMI expression-opt RPAR statement) ...)
-     ((RETURN expression-opt SEMI) ...))
+           SEMI expression-opt RPAR statement) (stx:for-stmt $3 $5 $7 $9 $1-start-pos))
+     ((RETURN expression-opt SEMI) (stx:ret-stmt $2 $1-start-pos)))
     (compound-statement
-     ((LBRA declaration-list-opt statement-list-opt RBRA) ...))
+     ((LBRA declaration-list-opt statement-list-opt RBRA) (stx:cmpd-stmt $2 $3 $1-start-pos)))
     (declaration-list-opt
-     (() ...)
-     ((declaration-list) ...))
+     (() '())
+     ((declaration-list) $1))
     (declaration-list
-     ((declaration) ...)
-     ((declaration-list declaration) ...))
+     ((declaration) $1)
+     ((declaration-list declaration) '($1 $2)))
     (statement-list-opt
-     (() ...)
-     ((statement-list) ...))
+     (() '())
+     ((statement-list) $1))
     (statement-list
-     ((statement) ...)
-     ((statement-list statement) ...))
+     ((statement) (list $1))
+     ((statement-list statement) '($1 $2)))
     (expression-opt
-     (() ...)
-     ((expression) ...))
+     (() '())
+     ((expression) $1))
     (expression
-     ((assign-expr) ...)
-     ((expression COMMA assign-expr) ...))
+     ((assign-expr) (list $1))
+     ((expression COMMA assign-expr) '($1 $3)))
     (assign-expr
-     ((logical-or-expr) ...)
-     ((logical-or-expr = assign-expr) ...))
+     ((logical-or-expr) $1)
+     ((logical-or-expr = assign-expr) (stx:assign-exp $1 $3 $2-start-pos)))
     (logical-or-expr
-     ((logical-and-expr) ...)
-     ((logical-or-expr || logical-and-expr) ...))
+     ((logical-and-expr) $1)
+     ((logical-or-expr || logical-and-expr) (stx:lop-exp '|| $1 $3 $2-start-pos)))
     (logical-and-expr
-     ((equality-expr) ...)
-     ((logical-and-expr && equality-expr) ...))
+     ((equality-expr) $1)
+     ((logical-and-expr && equality-expr) (stx:lop-exp '&& $1 $3 $2-start-pos)))
     (equality-expr
-     ((relational-expr) ...)
-     ((equality-expr == relational-expr) ...)
-     ((equality-expr != relational-expr) ...))
+     ((relational-expr) $1)
+     ((equality-expr == relational-expr) (stx:rop-exp '== $1 $3 $2-start-pos))
+     ((equality-expr != relational-expr) (stx:rop-exp '!= $1 $3 $2-start-pos)))
     (relational-expr
-     ((add-expr) ...)
-     ((relational-expr < add-expr) ...)
-     ((relational-expr > add-expr) ...)
-     ((relational-expr <= add-expr) ...)
-     ((relational-expr >= add-expr) ...))
+     ((add-expr) $1)
+     ((relational-expr < add-expr) (stx:rop-exp '< $1 $3 $2-start-pos))
+     ((relational-expr > add-expr) (stx:rop-exp '> $1 $3 $2-start-pos))
+     ((relational-expr <= add-expr) (stx:rop-exp '<= $1 $3 $2-start-pos))
+     ((relational-expr >= add-expr) (stx:rop-exp '>= $1 $3 $2-start-pos)))
     (add-expr
-     ((mult-expr) ...)
-     ((add-expr + mult-expr) ...)
-     ((add-expr - mult-expr) ...))
+     ((mult-expr) $1)
+     ((add-expr + mult-expr) (stx:aop-exp '+ $1 $3 $2-start-pos))
+     ((add-expr - mult-expr) (stx:aop-exp '- $1 $3 $2-start-pos)))
     (mult-expr
-     ((unary-expr) ...)
-     ((mult-expr * unary-expr) ...)
-     ((mult-expr / unary-expr) ...))
+     ((unary-expr) $1)
+     ((mult-expr * unary-expr) (stx:aop-exp '* $1 $3 $2-start-pos))
+     ((mult-expr / unary-expr) (stx:aop-exp '/ $1 $3 $2-start-pos)))
     (unary-expr
-     ((postfix-expr) ...)
-     ((- unary-expr) ...)
-     ((& unary-expr) ...)
-     ((* unary-expr) ...))
+     ((postfix-expr) $1)
+     ((- unary-expr) (stx:neg-exp $2 $1-start-pos))
+     ((& unary-expr) (stx:addr-exp $2 $1-start-pos))
+     ((* unary-expr) (stx:deref-exp $2 $1-start-pos)))
     (postfix-expr
-     ((primary-expr) ...)
-     ((postfix-expr LBBRA expression RBBRA) ...)
-     ((ID LPAR argument-expression-list-opt RPAR) ...))
+     ((primary-expr) $1)
+     ((postfix-expr LBBRA expression RBBRA) (stx:arr-exp $1 $3 $1-start-pos))
+     ((ID LPAR argument-expression-list-opt RPAR) (stx:func-exp $1 $3 $1-start-pos)))
     (primary-expr
-     ((ID) ...)
-     ((NUM) ...)
-     ((LPAR expression RPAR) ...))
+     ((ID) (stx:var-exp $1 $1-start-pos))
+     ((NUM) (stx:lit-exp $1 $1-start-pos))
+     ((LPAR expression RPAR) $2))
     (argument-expression-list-opt
-     (() ...)
-     ((argument-expression-list) ...))
+     (() '())
+     ((argument-expression-list) $1))
     (argument-expression-list
-     ((assign-expr) ...)
-     ((argument-expression-list COMMA assign-expr) ...)))))
+     ((assign-expr) (list $1))
+     ((argument-expression-list COMMA assign-expr) '($1 $3))))))
+
+(define (parse-port port)
+  (port-count-lines! port)
+  (small-c-parser (lambda () (small-c-lexer port))))
+
+(define (parse-string str)
+  (parse-port (open-input-string str)))
+
+(define (parse-file fname)
+  (parse-port (open-input-file fname)))
