@@ -83,8 +83,8 @@
    (tokens tokens-with-value tokens-without-value)
    (grammar
     (program
-     ((external-declaration) $1)
-     ((program external-declaration) (stx:program $1 $2 $1-start-pos)))
+     ((external-declaration) (list $1))
+     ((program external-declaration) `(,@$1 ,$2)))
     (external-declaration
      ((declaration) $1)
      ((function-prototype) $1)
@@ -93,31 +93,31 @@
      ((type-specifier declarator-list SEMI) (stx:decl $1 $2 $1-start-pos)))
     (declarator-list
      ((declarator) (list $1))
-     ((declarator-list COMMA declarator) '($1 $3)))
+     ((declarator-list COMMA declarator) `(,@$1 ,$3)))
     (declarator
      ((direct-declarator) $1)
-     ((* direct-declarator) (stx:pt-decl $2 $2-start-pos)))
+     ((* direct-declarator) (stx:pt-dcr $2 $2-start-pos)))
     (direct-declarator
-     ((ID) (stx:dir-decl $1 $1-start-pos))
-     ((ID LBBRA NUM RBBRA) (stx:arr-decl $1 $3 $1-start-pos)))
+     ((ID) (stx:dcr $1 $1-start-pos))
+     ((ID LBBRA NUM RBBRA) (stx:arr-dcr $1 $3 $1-start-pos)))
     (function-prototype
-     ((type-specifier function-declarator SEMI) (stx:prot-decl $1 $2 $1-start-pos)))
+     ((type-specifier function-declarator SEMI) (stx:proto $1 $2 $1-start-pos)))
     (function-declarator
-     ((ID LPAR parameter-type-list-opt RPAR) (stx:func-decl $1 $3 $1-start-pos))
-     ((* ID LPAR parameter-type-list-opt RPAR) (stx:pt-func-decl $2 $4 $2-start-pos)))
+     ((ID LPAR parameter-type-list-opt RPAR) (stx:fun-dcr $1 $3 $1-start-pos))
+     ((* ID LPAR parameter-type-list-opt RPAR) (stx:fun-pt-dcr $2 $4 $2-start-pos)))
     (function-definition
-     ((type-specifier function-declarator compound-statement) (stx:func-def $1 $2 $3 $1-start-pos)))
+     ((type-specifier function-declarator compound-statement) (stx:fun-def $1 $2 $3 $1-start-pos)))
     (parameter-type-list-opt
      (() '())
      ((parameter-type-list) $1))
     (parameter-type-list
      ((parameter-declaration) (list $1))
-     ((parameter-type-list COMMA parameter-declaration) '($1 $3)))
+     ((parameter-type-list COMMA parameter-declaration) `(,@$1 ,$3)))
     (parameter-declaration
      ((type-specifier parameter-declarator) (stx:parm-decl $1 $2 $1-start-pos)))
     (parameter-declarator
-     ((ID) (stx:parm-name $1 $1-start-pos))
-     ((* ID) (stx:pt-parm-name $2 $1-start-pos)))
+     ((ID) (stx:parm-dcr $1 $1-start-pos))
+     ((* ID) (stx:parm-pt-dcr $2 $1-start-pos)))
     (type-specifier
      ((INT) (stx:int-ty $1-start-pos))
      ((VOID) (stx:void-ty $1-start-pos)))
@@ -126,7 +126,7 @@
      ((expression SEMI) $1)
      ((compound-statement) $1)
      ((IF LPAR expression RPAR statement) (stx:if-stmt $3 $5 $1-start-pos))
-     ((IF LPAR expression RPAR statement ELSE statement) (stx:if-else-stmt $3 $5 $7 $1-start-pos))
+     ((IF LPAR expression RPAR statement ELSE statement) (stx:if-els-stmt $3 $5 $7 $1-start-pos))
      ((WHILE LPAR expression RPAR statement) (stx:while-stmt $3 $5 $1-start-pos))
      ((FOR LPAR expression-opt SEMI expression-opt
            SEMI expression-opt RPAR statement) (stx:for-stmt $3 $5 $7 $9 $1-start-pos))
@@ -137,20 +137,20 @@
      (() '())
      ((declaration-list) $1))
     (declaration-list
-     ((declaration) $1)
-     ((declaration-list declaration) '($1 $2)))
+     ((declaration) (list $1))
+     ((declaration-list declaration) `(,@$1 ,$2)))
     (statement-list-opt
      (() '())
      ((statement-list) $1))
     (statement-list
      ((statement) (list $1))
-     ((statement-list statement) '($1 $2)))
+     ((statement-list statement) `(,@$1 ,$2)))
     (expression-opt
      (() '())
      ((expression) $1))
     (expression
      ((assign-expr) (list $1))
-     ((expression COMMA assign-expr) '($1 $3)))
+     ((expression COMMA assign-expr) `(,@$1 ,$3)))
     (assign-expr
      ((logical-or-expr) $1)
      ((logical-or-expr = assign-expr) (stx:assign-exp $1 $3 $2-start-pos)))
@@ -196,7 +196,7 @@
      ((argument-expression-list) $1))
     (argument-expression-list
      ((assign-expr) (list $1))
-     ((argument-expression-list COMMA assign-expr) '($1 $3))))))
+     ((argument-expression-list COMMA assign-expr) `(,@$1 ,$3))))))
 
 (define (parse-port port)
   (port-count-lines! port)
