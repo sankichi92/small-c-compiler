@@ -90,7 +90,7 @@
      ((function-prototype) $1)
      ((function-definition) $1))
     (declaration
-     ((type-specifier declarator-list SEMI) (stx:decl $1 $2 $1-start-pos)))
+     ((type-specifier declarator-list SEMI) (stx:dcl $1 $2 $1-start-pos)))
     (declarator-list
      ((declarator) (list $1))
      ((declarator-list COMMA declarator) `(,@$1 ,$3)))
@@ -114,7 +114,7 @@
      ((parameter-declaration) (list $1))
      ((parameter-type-list COMMA parameter-declaration) `(,@$1 ,$3)))
     (parameter-declaration
-     ((type-specifier parameter-declarator) (stx:parm-decl $1 $2 $1-start-pos)))
+     ((type-specifier parameter-declarator) (stx:parm-dcl $1 $2 $1-start-pos)))
     (parameter-declarator
      ((ID) (stx:parm-dcr $1 $1-start-pos))
      ((* ID) (stx:parm-pt-dcr $2 $1-start-pos)))
@@ -129,7 +129,8 @@
      ((IF LPAR expression RPAR statement) (stx:if-els-stmt $3 $5 '() $1-start-pos))
      ((IF LPAR expression RPAR statement ELSE statement) (stx:if-els-stmt $3 $5 $7 $1-start-pos))
      ((WHILE LPAR expression RPAR statement) (stx:while-stmt $3 $5 $1-start-pos))
-     ;((FOR LPAR expression-opt SEMI expression-opt SEMI expression-opt RPAR statement) (stx:for-stmt $3 $5 $7 $9 $1-start-pos))
+     ;((FOR LPAR expression-opt SEMI expression-opt SEMI expression-opt RPAR statement)
+     ; (stx:for-stmt $3 $5 $7 $9 $1-start-pos))
      ((FOR LPAR expression-opt SEMI expression-opt SEMI expression-opt RPAR statement)
       `(,@$3 ,(stx:while-stmt $5 (stx:cmpd-stmt '() (list $9 $7) '()) $1-start-pos)))
      ((RETURN expression-opt SEMI) (stx:ret-stmt $2 $1-start-pos)))
@@ -210,15 +211,16 @@
         (stx:fun-dcr
           'print
           (list
-            (stx:parm-decl (stx:int-ty '()) (stx:parm-dcr 'i '()) '()))
+            (stx:parm-dcl (stx:int-ty '()) (stx:parm-dcr 'i '()) '()))
           '())
         '()))
     ast))
 
 (define (parse-port port)
   (port-count-lines! port)
-  (add-print-fun
-    (small-c-parser (lambda () (small-c-lexer port)))))
+  ;(add-print-fun
+    (small-c-parser (lambda () (small-c-lexer port))))
+  ;)
 
 (define (parse-string str)
   (parse-port (open-input-string str)))

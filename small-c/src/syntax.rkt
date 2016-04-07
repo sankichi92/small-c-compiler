@@ -4,19 +4,20 @@
 
 ;; declaration/definition
 
-(struct decl        (ty dcrs pos)       #:transparent)
-(struct dcr         (name pos)          #:transparent)
-(struct pt-dcr      (dcr pos)           #:transparent)
-(struct arr-dcr     (name num pos)      #:transparent)
+(struct dcl       (ty dcrs pos)       #:transparent)
+(struct proto     (ty dcr pos)        #:transparent)
+(struct fun-def   (ty dcr stmts pos)  #:transparent)
+(struct parm-dcl  (ty dcr pos)        #:transparent)
 
-(struct proto       (ty dcr pos)        #:transparent)
-(struct fun-dcr     (name parms pos)    #:transparent)
-(struct fun-pt-dcr  (name parms pos)    #:transparent)
-(struct fun-def     (ty dcr stmts pos)  #:transparent)
+;; declarator
 
-(struct parm-decl   (ty dcr pos)        #:transparent)
-(struct parm-dcr    (name pos)          #:transparent)
-(struct parm-pt-dcr (name pos)          #:transparent)
+(struct dcr         (name pos)        #:transparent)
+(struct pt-dcr      (dcr pos)         #:transparent)
+(struct arr-dcr     (name num pos)    #:transparent)
+(struct fun-dcr     (name parms pos)  #:transparent)
+(struct fun-pt-dcr  (name parms pos)  #:transparent)
+(struct parm-dcr    (name pos)        #:transparent)
+(struct parm-pt-dcr (name pos)        #:transparent)
 
 ;; type
 
@@ -30,7 +31,7 @@
 (struct while-stmt  (test body pos)           #:transparent)
 ;(struct for-stmt    (init test inc body pos)  #:transparent)
 (struct ret-stmt    (exp pos)                 #:transparent)
-(struct cmpd-stmt   (decls stmts pos)         #:transparent)
+(struct cmpd-stmt   (dcls stmts pos)         #:transparent)
 ;(struct print-stmt (exp pos) #:transparent)
 
 ;; expression
