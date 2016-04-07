@@ -125,11 +125,13 @@
      ((SEMI) '())
      ((expression SEMI) $1)
      ((compound-statement) $1)
-     ((IF LPAR expression RPAR statement) (stx:if-stmt $3 $5 $1-start-pos))
+     ;((IF LPAR expression RPAR statement) (stx:if-stmt $3 $5 $1-start-pos))
+     ((IF LPAR expression RPAR statement) (stx:if-els-stmt $3 $5 '() $1-start-pos))
      ((IF LPAR expression RPAR statement ELSE statement) (stx:if-els-stmt $3 $5 $7 $1-start-pos))
      ((WHILE LPAR expression RPAR statement) (stx:while-stmt $3 $5 $1-start-pos))
-     ((FOR LPAR expression-opt SEMI expression-opt
-           SEMI expression-opt RPAR statement) (stx:for-stmt $3 $5 $7 $9 $1-start-pos))
+     ;((FOR LPAR expression-opt SEMI expression-opt SEMI expression-opt RPAR statement) (stx:for-stmt $3 $5 $7 $9 $1-start-pos))
+     ((FOR LPAR expression-opt SEMI expression-opt SEMI expression-opt RPAR statement)
+      `(,@$3 ,(stx:while-stmt $5 (stx:cmpd-stmt '() (list $9 $7) '()) $1-start-pos)))
      ((RETURN expression-opt SEMI) (stx:ret-stmt $2 $1-start-pos)))
     (compound-statement
      ((LBRA declaration-list-opt statement-list-opt RBRA) (stx:cmpd-stmt $2 $3 $1-start-pos)))
@@ -180,12 +182,14 @@
      ((mult-expr / unary-expr) (stx:aop-exp '/ $1 $3 $2-start-pos)))
     (unary-expr
      ((postfix-expr) $1)
-     ((- unary-expr) (stx:neg-exp $2 $1-start-pos))
+     ;((- unary-expr) (stx:neg-exp $2 $1-start-pos))
+     ((- unary-expr) (stx:aop-exp '- (stx:lit-exp 0 '()) $2 $1-start-pos))
      ((& unary-expr) (stx:addr-exp $2 $1-start-pos))
      ((* unary-expr) (stx:deref-exp $2 $1-start-pos)))
     (postfix-expr
      ((primary-expr) $1)
-     ((postfix-expr LBBRA expression RBBRA) (stx:arr-exp $1 $3 $1-start-pos))
+     ;((postfix-expr LBBRA expression RBBRA) (stx:arr-exp $1 $3 $1-start-pos))
+     ((postfix-expr LBBRA expression RBBRA) (stx:deref-exp (list (stx:aop-exp '+ $1 (car $3) '())) $2-start-pos))
      ((ID LPAR argument-expression-list-opt RPAR) (stx:func-exp $1 $3 $1-start-pos)))
     (primary-expr
      ((ID) (stx:var-exp $1 $1-start-pos))

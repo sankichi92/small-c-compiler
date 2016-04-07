@@ -25,10 +25,10 @@
 
 ;; statement
 
-(struct if-stmt     (test tbody pos)          #:transparent)
+;(struct if-stmt     (test tbody pos)          #:transparent)
 (struct if-els-stmt (test tbody ebody pos)    #:transparent)
 (struct while-stmt  (test body pos)           #:transparent)
-(struct for-stmt    (init test inc body pos)  #:transparent)
+;(struct for-stmt    (init test inc body pos)  #:transparent)
 (struct ret-stmt    (exp pos)                 #:transparent)
 (struct cmpd-stmt   (decls stmts pos)         #:transparent)
 ;(struct print-stmt (exp pos) #:transparent)
@@ -41,11 +41,11 @@
 (struct rop-exp     (op left right pos) #:transparent)
 (struct aop-exp     (op left right pos) #:transparent)
 
-(struct neg-exp     (arg pos)           #:transparent)
+;(struct neg-exp     (arg pos)           #:transparent)
 (struct addr-exp    (var pos)           #:transparent)
 (struct deref-exp   (arg pos)           #:transparent)
 
-(struct arr-exp     (name idx pos)      #:transparent)
+;(struct arr-exp     (name idx pos)      #:transparent)
 (struct func-exp    (name args pos)     #:transparent)
 
 (struct var-exp     (tgt pos)           #:transparent)
