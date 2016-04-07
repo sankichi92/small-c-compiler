@@ -202,9 +202,23 @@
      ((assign-expr) (list $1))
      ((argument-expression-list COMMA assign-expr) `(,@$1 ,$3))))))
 
+(define (add-print-fun ast)
+  (append
+    (list
+      (stx:proto
+        (stx:void-ty '())
+        (stx:fun-dcr
+          'print
+          (list
+            (stx:parm-decl (stx:int-ty '()) (stx:parm-dcr 'i '()) '()))
+          '())
+        '()))
+    ast))
+
 (define (parse-port port)
   (port-count-lines! port)
-  (small-c-parser (lambda () (small-c-lexer port))))
+  (add-print-fun
+    (small-c-parser (lambda () (small-c-lexer port)))))
 
 (define (parse-string str)
   (parse-port (open-input-string str)))
