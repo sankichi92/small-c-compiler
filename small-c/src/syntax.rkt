@@ -47,7 +47,7 @@
 (struct deref-exp   (arg pos)           #:transparent)
 
 ;(struct arr-exp     (name idx pos)      #:transparent)
-(struct func-exp    (name args pos)     #:transparent)
 
+(struct fun-exp     (name args pos)     #:transparent)
 (struct var-exp     (tgt pos)           #:transparent)
 (struct lit-exp     (val pos)           #:transparent)

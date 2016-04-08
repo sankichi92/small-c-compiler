@@ -191,7 +191,7 @@
      ((primary-expr) $1)
      ;((postfix-expr LBBRA expression RBBRA) (stx:arr-exp $1 $3 $1-start-pos))
      ((postfix-expr LBBRA expression RBBRA) (stx:deref-exp (list (stx:aop-exp '+ $1 (car $3) '())) $2-start-pos))
-     ((ID LPAR argument-expression-list-opt RPAR) (stx:func-exp $1 $3 $1-start-pos)))
+     ((ID LPAR argument-expression-list-opt RPAR) (stx:fun-exp $1 $3 $1-start-pos)))
     (primary-expr
      ((ID) (stx:var-exp $1 $1-start-pos))
      ((NUM) (stx:lit-exp $1 $1-start-pos))
