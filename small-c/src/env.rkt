@@ -26,17 +26,30 @@
 
 (define (name-resolver ast)
   (let ([cur-lev 0])
-    (define initial-env (lambda (x) #f))
+    (define (inc-lev)
+      (set! cur-lev (+ cur-lev 1)))
+    (define (glob-lev env)
+      (set! cur-lev 0)
+      (env 0))
+    (define initial-env
+      (lambda (x)
+        (if (symbol? x)
+            #f
+            initial-env)))
     (define (register env decl)
-      (lambda (name)
-        (if (eq? name (decl-name decl))
-            decl
-            (env name))))
+      (lambda (x)
+        (if (symbol? x)
+            (if (eq? x (decl-name decl))
+                decl
+                (env x))
+            (if (= x (decl-lev decl))
+                (register env decl)
+                (env x)))))
     (define (resolve-decl-list env decl-list)
       (if (null? decl-list)
           (cons '() env)
           (let* ([decl (car decl-list)]
-                 [ret (resolve-decl env decl)]
+                 [ret (resolve-decl (glob-lev env) decl)]
                  [new-decl (car ret)]
                  [new-env (cdr ret)]
                  [rest-ret (resolve-decl-list new-env (cdr decl-list))]
