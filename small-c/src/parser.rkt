@@ -99,7 +99,7 @@
      ((* direct-declarator) (stx:var-decl (car $2) `(pointer ,(cdr $2)) $1-start-pos)))
     (direct-declarator
      ((ID) (cons $1 '()))
-     ((ID LBBRA NUM RBBRA) (cons $1 `(array ,$3))))
+     ((ID LBBRA NUM RBBRA) (cons $1 (cons 'array $3))))
     (function-prototype
      ((type-specifier function-declarator SEMI)
       (stx:fun-decl (car $2) (format-type $1 (cadr $2)) (map stx:parm-decl-ty (caddr $2)) $1-start-pos)))
@@ -207,7 +207,7 @@
      ((argument-expression-list COMMA assign-expr) `(,@$1 ,$3))))))
 
 (define (format-type ty pt)
-  (if (empty? pt)
+  (if (null? pt)
     ty
     (list pt ty)))
 
@@ -223,9 +223,8 @@
 
 (define (parse-port port)
   (port-count-lines! port)
-  ;(add-print-fun
-    (small-c-parser (lambda () (small-c-lexer port))))
-  ;)
+  (add-print-fun
+    (small-c-parser (lambda () (small-c-lexer port)))))
 
 (define (parse-string str)
   (parse-port (open-input-string str)))
