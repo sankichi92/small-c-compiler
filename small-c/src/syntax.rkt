@@ -1,5 +1,4 @@
 #lang racket
-;; (require rackunit)
 (provide (all-defined-out))
 
 ;; declaration/definition
@@ -31,23 +30,19 @@
 (struct while-stmt  (test body pos)           #:transparent)
 ;(struct for-stmt    (init test inc body pos)  #:transparent)
 (struct ret-stmt    (exp pos)                 #:transparent)
-(struct cmpd-stmt   (dcls stmts pos)         #:transparent)
+(struct cmpd-stmt   (dcels stmts pos)         #:transparent)
 ;(struct print-stmt (exp pos) #:transparent)
 
 ;; expression
 
 (struct assign-exp  (left right pos)    #:transparent)
-
 (struct lop-exp     (op left right pos) #:transparent)
 (struct rop-exp     (op left right pos) #:transparent)
 (struct aop-exp     (op left right pos) #:transparent)
-
 ;(struct neg-exp     (arg pos)           #:transparent)
 (struct addr-exp    (var pos)           #:transparent)
 (struct deref-exp   (arg pos)           #:transparent)
-
 ;(struct arr-exp     (name idx pos)      #:transparent)
-
 (struct fun-exp     (name args pos)     #:transparent)
 (struct var-exp     (tgt pos)           #:transparent)
 (struct lit-exp     (val pos)           #:transparent)
