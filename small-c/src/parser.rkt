@@ -119,8 +119,8 @@
      ((ID) (stx:parm-dcr $1 $1-start-pos))
      ((* ID) (stx:parm-pt-dcr $2 $1-start-pos)))
     (type-specifier
-     ((INT) (stx:int-ty $1-start-pos))
-     ((VOID) (stx:void-ty $1-start-pos)))
+     ((INT) 'int)
+     ((VOID) 'void))
     (statement
      ((SEMI) '())
      ((expression SEMI) $1)

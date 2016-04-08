@@ -18,10 +18,6 @@
 (struct parm-dcr    (name pos)        #:transparent)
 (struct parm-pt-dcr (name pos)        #:transparent)
 
-;; type
-
-(struct int-ty  (pos) #:transparent)
-(struct void-ty (pos) #:transparent)
 
 ;; statement
 
