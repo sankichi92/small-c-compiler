@@ -1,5 +1,6 @@
 #lang racket
-(require (prefix-in stx: "syntax.rkt")
+(require parser-tools/lex
+         (prefix-in stx: "syntax.rkt")
          (prefix-in parse: "parser.rkt"))
 (provide (all-defined-out))
 
@@ -57,11 +58,11 @@
                          [lev (decl-lev ret)]
                          [type (decl-type ret)])
                      (cond [(and (eq? 'var kind) (= 0 lev))
-                            (eprintf "Error:Redifinition\n")]
+                            (redef-err pos name)]
                            [(and
                              (or (eq? 'proto kind) (eq? 'fun kind))
                              (not (equal? parm-tys (cddr type))))
-                            (eprintf "Error:Redifinition\n")]
+                            (redef-err pos name)]
                            [(or (eq? 'proto kind) (eq? 'fun kind))
                             (cons '() env)]
                            [else
@@ -81,11 +82,11 @@
                          [lev (decl-lev)]
                          [type (decl-type ret)])
                      (cond [(and (eq? 'var kind) (= 0 lev))
-                            (eprintf "Error:Redifinition\n")]
+                            (redef-err pos name)]
                            [(and
                              (or (eq? 'proto kind) (eq? 'fun kind))
                              (not (equal? (map stx:parm-decl-ty parms) (cddr type))))
-                            (eprintf "Error:Redifinition\n")]
+                            (redef-err pos name)]
                            [(eq? 'fun kind)
                             (cons '() env)]
                            [else
@@ -112,13 +113,13 @@
             (let ([kind (decl-kind ret)]
                   [lev (decl-lev ret)])
               (cond [(and (or (eq? kind 'fun) (eq? kind 'proto)) (= lev 0))
-                     (eprintf "Error:Redifinittion\n")]
+                     (redef-err pos name)]
                     [(and (eq? kind 'var) (= lev cur-lev))
-                     (eprintf "Error:Redifinition\n")]
+                     (redef-err pos name)]
                     [else
                      (begin
                        (cond [(eq? kind 'parm)
-                              (eprintf "Warning:Redifinition of a parameter\n")])
+                              (redef-warn pos name)])
                        (register-var env name ty pos))]))
             (register-var env name ty pos))))
     (define (register-var env name ty pos)
@@ -142,4 +143,10 @@
              (list 'array ty1 (cdr ty2))]
             [(eq? 'pointer (car ty2))
              (list 'pointer (format-type ty1 (cdr ty2)))]))
+    (define (redef-warn pos name)
+      (eprintf (err-msg pos (format "name resolve warning: overwriting of parm ~a" name))))
+    (define (redef-err pos name)
+      (error (err-msg pos (format "name resolve error: redifinition of ~a" name))))
+    (define (err-msg pos msg)
+      (format "~a:~a: ~a\n" (position-line pos) (position-col pos) msg))
     (car (resolve-decl-list initial-env ast))))
