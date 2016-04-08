@@ -24,91 +24,122 @@
 (struct decl (name lev kind type) #:transparent)
 
 (define (name-resolver ast)
-  (define initial-env (lambda (x) #f))
-  (define (register env decl)
-    (lambda (x)
-      (if (equal? x (decl-name decl))
-          decl
-          (env decl))))
-  (define (resolve-decl-list env decl-list)
-    (if (null? decl-list)
-        (cons '() env)
-        (let* ([decl (car decl-list)]
-               [ret (resolve-decl env decl)]
-               [new-decl (car ret) ]
-               [new-env (cdr ret)]
-               [rest-ret (resolve-decl-list new-env (cdr decl-list))]
-               [last-env (cdr rest-ret)])
-          (cons (cons new-decl (car rest-ret)) last-env))))
-  (define (resolve-decl env decl)
-    (cond [(stx:decl? decl)
-           (let* ([ty (stx:var-decl-ty decl)]
-                  [dcrs (stx:var-decl-dcrs decl)]
-                  [ret (resolve-dcr-list env dcrs)]
-                  [new-decl (car ret)]
-                  [new-env (cdr ret)])
-              (cons new-decl new-env))]
-          ;[(stx:proto? decl)
-          ; (let ([ty (stx:proto-ty decl)]
-          ;        [dcr (stx:proto-dcr decl)]))] ;TODO
-          ;[(stx:fun-def? decl)
-          ; (let ([ty (stx:fun-def-ty decl)]
-          ;        [dcr (stx:fun-def-dcr decl)]
-          ;        [stmts (stx:fun-def-stmts decl)]))]
-    )) ;TODO
-  (define (resolve-dcr-list env dcr-list)
-    (if (null? dcr-list)
-        (cons '() env)
-        (let* ([dcr (car dcr-list)]
-               [ret (resolve-dcr env dcr 'int)]
-               [new-dcr (car ret)]
-               [new-env (cdr ret)]
-               [rest-ret (resolve-dcr-list new-env (cdr dcr-list))]
-               [last-env (cdr rest-ret)])
-          (cons (cons new-dcr (car rest-ret)) last-env))))
-  (define (resolve-dcr env dcr ty)
-    (cond [(stx:pt-dcr? dcr)
-           (let ([new-dcr (stx:pt-dcr-dcr dcr)])
-              (resolve-dcr env new-dcr (list 'pointer ty)))]
-          [(stx:arr-dcr? dcr)
-           (let* ([name (stx:arr-dcr-name dcr)]
-                  [num (stx:arr-dcr-num dcr)]
-                  [ret (env name)])
-              (if ret
-                  (let ([kind (decl-kind ret)]
-                        [lev (decl-lev ret)])
-                    (cond [(and (or (eq? kind 'fun) (eq? kind 'proto)) (= lev 0))
-                           (display "Error:Redifinition" (current-error-port))]
-                          [(and (eq? kind 'var) (= lev 0))
-                           (display "Error:Redifinition" (current-error-port))]
-                          [else
-                           (begin
-                             (cond [(eq? kind 'parm)
-                                    (display "Warning:" (current-error-port))])
-                             (let* ([decl (decl name 0 'var (list 'array ty num))]
-                                    [new-env (register env decl)])
-                                (cons decl new-env)))]))
-                  (let* ([decl (decl name 0 'var (list 'array ty num))]
-                         [new-env (register env decl)])
-                    (cons decl new-env))))]
-          [(stx:dcr? dcr)
-           (let* ([name (stx:dcr-name dcr)]
-                  [ret (env name)])
-              (if ret
-                (let ([kind (decl-kind ret)]
-                      [lev (decl-lev ret)])
-                  (cond [(and (or (eq? kind 'fun) (eq? kind 'proto)) (= lev 0))
-                         (display "Error:Redifinition" (current-error-port))]
-                        [(and (eq? kind 'var) (= lev 0))
-                         (display "Error:Redifinition" (current-error-port))]
-                        [else
-                         (begin
-                           (cond [(eq? kind 'parm)
-                                  (display "Warning:" (current-error-port))])
-                           (let* ([decl (decl name 0 'var ty)]
-                                  [new-env (register env decl)])
-                              (cons decl new-env)))]))
-                (let* ([decl (decl name 0 'var ty)]
-                       [new-env (register env decl)])
-                  (cons decl new-env))))]))
-  (car (resolve-decl-list initial-env ast)))
+  (let ([cur-lev 0])
+    (define initial-env (lambda (x) #f))
+    (define (register env decl)
+      (lambda (name)
+        (if (eq? name (decl-name decl))
+            decl
+            (env name))))
+    (define (resolve-decl-list env decl-list)
+      (if (null? decl-list)
+          (cons '() env)
+          (let* ([decl (car decl-list)]
+                 [ret (resolve-decl env decl)]
+                 [new-decl (car ret)]
+                 [new-env (cdr ret)]
+                 [rest-ret (resolve-decl-list new-env (cdr decl-list))]
+                 [last-env (cdr rest-ret)])
+            (cons (cons new-decl (car rest-ret)) last-env))))
+    (define (resolve-decl env decl)
+      (cond [(stx:var-decls? decl)
+             (let ([ty (stx:var-decls-ty decl)]
+                   [decl-list (stx:var-decls-decls decl)])
+               (resolve-var-decl-list env decl-list ty))]
+            [(stx:fun-decl? decl)
+             (let* ([name (stx:fun-decl-name decl)]
+                    [ret-ty (stx:fun-decl-ret-ty decl)]
+                    [parm-tys (stx:fun-decl-parm-tys decl)]
+                    [pos (stx:fun-decl-pos decl)]
+                    [ret (env name)])
+               (if ret
+                   (let ([kind (decl-kind ret)]
+                         [lev (decl-lev ret)]
+                         [type (decl-type ret)])
+                     (cond [(and (eq? 'var kind) (= 0 lev))
+                            (eprintf "Error:Redifinition\n")]
+                           [(and
+                             (or (eq? 'proto kind) (eq? 'fun kind))
+                             (not (equal? parm-tys (cddr type))))
+                            (eprintf "Error:Redifinition\n")]
+                           [(or (eq? 'proto kind) (eq? 'fun kind))
+                            (cons '() env)]
+                           [else
+                            (register-proto env name ret-ty parm-tys pos)]))
+                   (register-proto env name ret-ty parm-tys pos)))]
+            [(stx:fun-def? decl)
+             (let* ([name (stx:fun-def-name decl)]
+                    [ret-ty (stx:fun-def-ret-ty decl)]
+                    [parms (stx:fun-def-parms decl)]
+                    ;[new-parms (resolve-param-list params)] ;TODO
+                    [body (stx:fun-def-body decl)]
+                    ;[new-body (resolve-cmpd-stmt body)] ;TODO
+                    [pos (stx:fun-def-pos decl)]
+                    [ret (env name)])
+               (if ret
+                   (let ([kind (decl-kind ret)]
+                         [lev (decl-lev)]
+                         [type (decl-type ret)])
+                     (cond [(and (eq? 'var kind) (= 0 lev))
+                            (eprintf "Error:Redifinition\n")]
+                           [(and
+                             (or (eq? 'proto kind) (eq? 'fun kind))
+                             (not (equal? (map stx:parm-decl-ty parms) (cddr type))))
+                            (eprintf "Error:Redifinition\n")]
+                           [(eq? 'fun kind)
+                            (cons '() env)]
+                           [else
+                            (register-fun env name ret-ty parms body pos)]))
+                   (register-fun env name ret-ty parms body pos)))]
+            )) ;TODO
+    (define (resolve-var-decl-list env decl-list ty)
+      (if (null? decl-list)
+          (cons '() env)
+          (let* ([decl (car decl-list)]
+                 [ret (resolve-var-decl env decl ty)]
+                 [new-decl (car ret)]
+                 [new-env (cdr ret)]
+                 [rest-ret (resolve-var-decl-list new-env (cdr decl-list) ty)]
+                 [last-env (cdr rest-ret)])
+            (cons (cons new-decl (car rest-ret)) last-env))))
+    (define (resolve-var-decl env decl ty1)
+      (let* ([name (stx:var-decl-name decl)]
+             [ty2 (stx:var-decl-ty decl)]
+             [ty (format-type ty1 ty2)]
+             [pos (stx:var-decl-pos decl)]
+             [ret (env name)])
+        (if ret
+            (let ([kind (decl-kind ret)]
+                  [lev (decl-lev ret)])
+              (cond [(and (or (eq? kind 'fun) (eq? kind 'proto)) (= lev 0))
+                     (eprintf "Error:Redifinittion\n")]
+                    [(and (eq? kind 'var) (= lev cur-lev))
+                     (eprintf "Error:Redifinition\n")]
+                    [else
+                     (begin
+                       (cond [(eq? kind 'parm)
+                              (eprintf "Warning:Redifinition of a parameter\n")])
+                       (register-var env name ty pos))]))
+            (register-var env name ty pos))))
+    (define (register-var env name ty pos)
+      (let* ([decl (decl name cur-lev 'var ty)]
+             [new-env (register env decl)])
+        (cons (stx:var-decl decl ty pos) new-env)))
+    (define (register-proto env name ret-ty parm-tys pos)
+      (let* ([decl (decl name 0 'proto (list* 'fun ret-ty parm-tys))]
+             [new-env (register env decl)])
+        (cons (stx:fun-decl decl ret-ty parm-tys pos) new-env)))
+    (define (register-fun env name ret-ty parms body pos)
+      (let* ([parm-tys (map stx:parm-decl-ty parms)]
+             [type (list* 'fun ret-ty parm-tys)]
+             [decl (decl name 0 'fun type)]
+             [new-env (register env decl)])
+        (cons (stx:fun-def decl ret-ty parms body pos) new-env)))
+    (define (format-type ty1 ty2)
+      (cond [(null? ty2)
+             ty1]
+            [(eq? 'array (car ty2))
+             (list 'array ty1 (cdr ty2))]
+            [(eq? 'pointer (car ty2))
+             (list 'pointer (format-type ty1 (cdr ty2)))]))
+    (car (resolve-decl-list initial-env ast))))
