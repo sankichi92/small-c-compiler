@@ -90,23 +90,25 @@
      ((function-prototype) $1)
      ((function-definition) $1))
     (declaration
-     ((type-specifier declarator-list SEMI) (stx:dcl $1 $2 $1-start-pos)))
+     ((type-specifier declarator-list SEMI) (stx:var-decls $1 $2 $1-start-pos)))
     (declarator-list
      ((declarator) (list $1))
      ((declarator-list COMMA declarator) `(,@$1 ,$3)))
     (declarator
-     ((direct-declarator) $1)
-     ((* direct-declarator) (stx:pt-dcr $2 $2-start-pos)))
+     ((direct-declarator) (stx:var-decl (car $1) (cdr $1) $1-start-pos))
+     ((* direct-declarator) (stx:var-decl (car $2) `(pointer ,(cdr $2)) $1-start-pos)))
     (direct-declarator
-     ((ID) (stx:dcr $1 $1-start-pos))
-     ((ID LBBRA NUM RBBRA) (stx:arr-dcr $1 $3 $1-start-pos)))
+     ((ID) (cons $1 '()))
+     ((ID LBBRA NUM RBBRA) (cons $1 `(array ,$3))))
     (function-prototype
-     ((type-specifier function-declarator SEMI) (stx:proto $1 $2 $1-start-pos)))
+     ((type-specifier function-declarator SEMI)
+      (stx:fun-decl (car $2) (format-type $1 (cadr $2)) (map stx:parm-decl-ty (caddr $2)) $1-start-pos)))
     (function-declarator
-     ((ID LPAR parameter-type-list-opt RPAR) (stx:fun-dcr $1 $3 $1-start-pos))
-     ((* ID LPAR parameter-type-list-opt RPAR) (stx:fun-pt-dcr $2 $4 $2-start-pos)))
+     ((ID LPAR parameter-type-list-opt RPAR) (list $1 '() $3))
+     ((* ID LPAR parameter-type-list-opt RPAR) (list $2 'pointer $4)))
     (function-definition
-     ((type-specifier function-declarator compound-statement) (stx:fun-def $1 $2 $3 $1-start-pos)))
+     ((type-specifier function-declarator compound-statement)
+      (stx:fun-def (car $2) (format-type $1 (cadr $2)) (caddr $2) $3 $1-start-pos)))
     (parameter-type-list-opt
      (() '())
      ((parameter-type-list) $1))
@@ -114,10 +116,11 @@
      ((parameter-declaration) (list $1))
      ((parameter-type-list COMMA parameter-declaration) `(,@$1 ,$3)))
     (parameter-declaration
-     ((type-specifier parameter-declarator) (stx:parm-dcl $1 $2 $1-start-pos)))
+     ((type-specifier parameter-declarator)
+      (stx:parm-decl (car $2) (format-type $1 (cdr $2)) $1-start-pos)))
     (parameter-declarator
-     ((ID) (stx:parm-dcr $1 $1-start-pos))
-     ((* ID) (stx:parm-pt-dcr $2 $1-start-pos)))
+     ((ID) (cons $1 '()))
+     ((* ID) (cons $2 'pointer)))
     (type-specifier
      ((INT) 'int)
      ((VOID) 'void))
@@ -203,16 +206,18 @@
      ((assign-expr) (list $1))
      ((argument-expression-list COMMA assign-expr) `(,@$1 ,$3))))))
 
+(define (format-type ty pt)
+  (if (empty? pt)
+    ty
+    (list pt ty)))
+
 (define (add-print-fun ast)
   (append
     (list
-      (stx:proto
-        (stx:void-ty '())
-        (stx:fun-dcr
-          'print
-          (list
-            (stx:parm-dcl (stx:int-ty '()) (stx:parm-dcr 'i '()) '()))
-          '())
+      (stx:fun-decl
+        'print
+        'void
+        (list 'int)
         '()))
     ast))
 

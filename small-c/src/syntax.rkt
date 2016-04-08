@@ -3,21 +3,11 @@
 
 ;; declaration/definition
 
-(struct dcl       (ty dcrs pos)       #:transparent)
-(struct proto     (ty dcr pos)        #:transparent)
-(struct fun-def   (ty dcr stmts pos)  #:transparent)
-(struct parm-dcl  (ty dcr pos)        #:transparent)
-
-;; declarator
-
-(struct dcr         (name pos)        #:transparent)
-(struct pt-dcr      (dcr pos)         #:transparent)
-(struct arr-dcr     (name num pos)    #:transparent)
-(struct fun-dcr     (name parms pos)  #:transparent)
-(struct fun-pt-dcr  (name parms pos)  #:transparent)
-(struct parm-dcr    (name pos)        #:transparent)
-(struct parm-pt-dcr (name pos)        #:transparent)
-
+(struct var-decls (ty decls pos)               #:transparent)
+(struct var-decl  (name ty pos)                #:transparent)
+(struct parm-decl (name ty pos)                #:transparent)
+(struct fun-decl  (name ret-ty parm-tys pos)   #:transparent)
+(struct fun-def   (name ret-ty parms body pos) #:transparent)
 
 ;; statement
 
