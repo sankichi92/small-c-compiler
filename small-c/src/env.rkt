@@ -30,31 +30,31 @@
       (if (equal? x (decl-name decl))
           decl
           (env decl))))
-  (define (resolve-dcl-list env dcl-list)
-    (if (null? dcl-list)
+  (define (resolve-decl-list env decl-list)
+    (if (null? decl-list)
         (cons '() env)
-        (let* ([dcl (car dcl-list)]
-               [ret (resolve-dcl env dcl)]
-               [new-dcl (car ret) ]
+        (let* ([decl (car decl-list)]
+               [ret (resolve-decl env decl)]
+               [new-decl (car ret) ]
                [new-env (cdr ret)]
-               [rest-ret (resolve-dcl-list new-env (cdr dcl-list))]
+               [rest-ret (resolve-decl-list new-env (cdr decl-list))]
                [last-env (cdr rest-ret)])
-          (cons (cons new-dcl (car rest-ret)) last-env))))
-  (define (resolve-dcl env dcl)
-    (cond [(stx:dcl? dcl)
-           (let* ([ty (stx:dcl-ty dcl)]
-                  [dcrs (stx:dcl-dcrs dcl)]
+          (cons (cons new-decl (car rest-ret)) last-env))))
+  (define (resolve-decl env decl)
+    (cond [(stx:decl? decl)
+           (let* ([ty (stx:var-decl-ty decl)]
+                  [dcrs (stx:var-decl-dcrs decl)]
                   [ret (resolve-dcr-list env dcrs)]
-                  [new-dcl (car ret)]
+                  [new-decl (car ret)]
                   [new-env (cdr ret)])
-              (cons new-dcl new-env))]
-          ;[(stx:proto? dcl)
-          ; (let ([ty (stx:proto-ty dcl)]
-          ;        [dcr (stx:proto-dcr dcl)]))] ;TODO
-          ;[(stx:fun-def? dcl)
-          ; (let ([ty (stx:fun-def-ty dcl)]
-          ;        [dcr (stx:fun-def-dcr dcl)]
-          ;        [stmts (stx:fun-def-stmts dcl)]))]
+              (cons new-decl new-env))]
+          ;[(stx:proto? decl)
+          ; (let ([ty (stx:proto-ty decl)]
+          ;        [dcr (stx:proto-dcr decl)]))] ;TODO
+          ;[(stx:fun-def? decl)
+          ; (let ([ty (stx:fun-def-ty decl)]
+          ;        [dcr (stx:fun-def-dcr decl)]
+          ;        [stmts (stx:fun-def-stmts decl)]))]
     )) ;TODO
   (define (resolve-dcr-list env dcr-list)
     (if (null? dcr-list)
@@ -111,4 +111,4 @@
                 (let* ([decl (decl name 0 'var ty)]
                        [new-env (register env decl)])
                   (cons decl new-env))))]))
-  (car (resolve-dcl-list initial-env ast)))
+  (car (resolve-decl-list initial-env ast)))
