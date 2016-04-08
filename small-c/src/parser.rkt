@@ -188,7 +188,10 @@
      ((postfix-expr) $1)
      ;((- unary-expr) (stx:neg-exp $2 $1-start-pos))
      ((- unary-expr) (stx:aop-exp '- (stx:lit-exp 0 '()) $2 $1-start-pos))
-     ((& unary-expr) (stx:addr-exp $2 $1-start-pos))
+     ((& unary-expr)
+      (if (stx:deref-exp? $2)
+          (stx:deref-exp-arg $2)
+          (stx:addr-exp $2 $1-start-pos)))
      ((* unary-expr) (stx:deref-exp $2 $1-start-pos)))
     (postfix-expr
      ((primary-expr) $1)
