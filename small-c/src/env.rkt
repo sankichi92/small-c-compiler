@@ -84,11 +84,15 @@
              (let* ([name (stx:fun-def-name decl)]
                     [ret-ty (stx:fun-def-ret-ty decl)]
                     [parms (stx:fun-def-parms decl)]
-                    ;[new-parms (resolve-param-list params)] ;TODO
                     [body (stx:fun-def-body decl)]
-                    ;[new-body (resolve-cmpd-stmt body)] ;TODO
                     [pos (stx:fun-def-pos decl)]
-                    [ret (env name)])
+                    [ret1 (resolve-parm-decl-list env parms)]
+                    [new-parms (car ret1)]
+                    [parms-env (cdr ret1)]
+                    ;[ret2 (resolve-cmpd-stmt parms-env body)]
+                    ;[new-body (car ret2)] ;TODO: body -> new-body
+                    ;[new-env (cdr ret2)]  ;TODO: parms-env -> new-env
+                    [ret (parms-env name)])
                (if ret
                    (let ([kind (decl-kind ret)]
                          [type (decl-type ret)])
@@ -99,10 +103,10 @@
                              (not (equal? (map stx:parm-decl-ty parms) (cddr type))))
                             (redef-err pos name)]
                            [(eq? 'fun kind)
-                            (cons '() env)]
+                            (cons '() parms-env)]
                            [else
-                            (register-fun env name ret-ty parms body pos)]))
-                   (register-fun env name ret-ty parms body pos)))]
+                            (register-fun parms-env name ret-ty new-parms body pos)]))
+                   (register-fun parms-env name ret-ty new-parms body pos)))]
             )) ;TODO
     (define (resolve-var-decl-list env decl-list ty)
       (if (null? decl-list)
@@ -133,6 +137,28 @@
                               (redef-warn pos name)])
                        (register-var env name ty pos))]))
             (register-var env name ty pos))))
+    (define (resolve-parm-decl-list env parm-list)
+      (inc-lev)
+      (if (null? parm-list)
+          (cons '() env)
+          (let* ([parm (car parm-list)]
+                 [ret (resolve-parm-decl env parm)]
+                 [new-parm (car ret)]
+                 [new-env (cdr ret)]
+                 [rest-ret (resolve-parm-decl-list new-env (cdr parm-list))]
+                 [last-env (cdr rest-ret)])
+            (cons (cons new-parm (car rest-ret)) last-env))))
+    (define (resolve-parm-decl env parm)
+      (let* ([name (stx:parm-decl-name parm)]
+             [ty (stx:parm-decl-ty parm)]
+             [pos (stx:parm-decl-pos parm)]
+             [ret (env name)])
+        (if ret
+            (let ([kind (decl-kind ret)])
+              (if (eq? 'parm kind)
+                  (redef-err pos name)
+                  (register-parm env name ty pos)))
+            (register-parm env name ty pos))))
     (define (register-var env name ty pos)
       (let* ([decl (decl name cur-lev 'var ty)]
              [new-env (register env decl)])
@@ -147,6 +173,10 @@
              [decl (decl name 0 'fun type)]
              [new-env (register env decl)])
         (cons (stx:fun-def decl ret-ty parms body pos) new-env)))
+    (define (register-parm env name ty pos)
+      (let* ([decl (decl name 1 'parm ty)]
+             [new-env (register env decl)])
+        (cons (stx:parm-decl decl ty pos) new-env)))
     (define (format-type ty1 ty2)
       (cond [(null? ty2)
              ty1]
