@@ -55,9 +55,8 @@
                     [ret (env name)])
                (if ret
                    (let ([kind (decl-kind ret)]
-                         [lev (decl-lev ret)]
                          [type (decl-type ret)])
-                     (cond [(and (eq? 'var kind) (= 0 lev))
+                     (cond [(and (eq? 'var kind))
                             (redef-err pos name)]
                            [(and
                              (or (eq? 'proto kind) (eq? 'fun kind))
@@ -79,9 +78,8 @@
                     [ret (env name)])
                (if ret
                    (let ([kind (decl-kind ret)]
-                         [lev (decl-lev)]
                          [type (decl-type ret)])
-                     (cond [(and (eq? 'var kind) (= 0 lev))
+                     (cond [(and (eq? 'var kind))
                             (redef-err pos name)]
                            [(and
                              (or (eq? 'proto kind) (eq? 'fun kind))
@@ -96,23 +94,23 @@
     (define (resolve-var-decl-list env decl-list ty)
       (if (null? decl-list)
           (cons '() env)
-          (let* ([decl (car decl-list)]
-                 [ret (resolve-var-decl env decl ty)]
-                 [new-decl (car ret)]
+          (let* ([var (car decl-list)]
+                 [ret (resolve-var-decl env var ty)]
+                 [new-var (car ret)]
                  [new-env (cdr ret)]
                  [rest-ret (resolve-var-decl-list new-env (cdr decl-list) ty)]
                  [last-env (cdr rest-ret)])
-            (cons (cons new-decl (car rest-ret)) last-env))))
-    (define (resolve-var-decl env decl ty1)
-      (let* ([name (stx:var-decl-name decl)]
-             [ty2 (stx:var-decl-ty decl)]
+            (cons (cons new-var (car rest-ret)) last-env))))
+    (define (resolve-var-decl env var ty1)
+      (let* ([name (stx:var-decl-name var)]
+             [ty2 (stx:var-decl-ty var)]
              [ty (format-type ty1 ty2)]
-             [pos (stx:var-decl-pos decl)]
+             [pos (stx:var-decl-pos var)]
              [ret (env name)])
         (if ret
             (let ([kind (decl-kind ret)]
                   [lev (decl-lev ret)])
-              (cond [(and (or (eq? kind 'fun) (eq? kind 'proto)) (= lev 0))
+              (cond [(or (eq? kind 'fun) (eq? kind 'proto))
                      (redef-err pos name)]
                     [(and (eq? kind 'var) (= lev cur-lev))
                      (redef-err pos name)]
