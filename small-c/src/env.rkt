@@ -73,7 +73,8 @@
                   (let ([kind (decl-kind ret)]
                         [type (decl-type ret)])
                     (if (or
-                          (or (eq? kind 'var) (eq? kind 'fun))
+                          (eq? kind 'var)
+                          (eq? kind 'fun)
                           (and
                             (eq? kind 'proto)
                             (not (equal? (map stx:parm-decl-ty parms) (cddr type)))))
@@ -99,15 +100,15 @@
       (if ret
           (let ([ret-kind (decl-kind ret)]
                 [ret-lev (decl-lev ret)])
-            (cond [(or (eq? ret-kind 'fun) (eq? ret-kind 'proto))
-                   (redef-err pos name)]
-                  [(and (eq? ret-kind 'var) (= ret-lev lev))
-                   (redef-err pos name)]
-                  [else
-                   (begin
-                     (cond [(eq? ret-kind 'parm)
-                            (redef-warn pos name)])
-                     (register-var env lev name ty pos))]))
+            (if (or
+                  (eq? ret-kind 'fun)
+                  (eq? ret-kind 'proto)
+                  (and (eq? ret-kind 'var) (= ret-lev lev)))
+                (redef-err pos name)
+                (begin
+                  (cond [(eq? ret-kind 'parm)
+                         (redef-warn pos name)])
+                  (register-var env lev name ty pos))))
           (register-var env lev name ty pos))))
   (define (resolve-cmpd-stmt env prev-lev cmpd-stmt)
     (define (resolve-in-decl env lev decl)
