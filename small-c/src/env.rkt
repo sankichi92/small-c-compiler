@@ -64,10 +64,10 @@
              (if ret
                  (let ([kind (decl-kind ret)]
                        [type (decl-type ret)])
-                   (cond [(and (eq? kind 'var))
+                   (cond [(or (eq? kind 'var) (eq? kind 'fun))
                           (redef-err pos name)]
                          [(and
-                           (or (eq? kind 'proto) (eq? kind 'fun))
+                           (eq? kind 'proto)
                            (not (equal? (map stx:parm-decl-ty parms) (cddr type))))
                           (redef-err pos name)]
                          [(eq? kind 'fun)
