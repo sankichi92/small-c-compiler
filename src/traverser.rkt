@@ -50,5 +50,7 @@
                         [new-exp (map traverse-exp exp)])
                    (stx:ret-stmt new-exp pos))])])
       (stmt-proc new-stmt)))
-  (define (traverse-exp exp) exp)
+  (define (traverse-exp exp)
+    (let ([new-exp exp])
+      (exp-proc new-exp)))
   (map traverse-decl ast))
