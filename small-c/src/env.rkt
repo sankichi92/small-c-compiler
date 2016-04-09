@@ -12,14 +12,14 @@
       (if (eq? name (decl-name decl))
           decl
           (env name))))
-  (define (resolve-list env lev list resolver)
-    (if (null? list)
+  (define (resolve-decl-list env lev decl-list resolver)
+    (if (null? decl-list)
         (cons '() env)
-        (let* ([item (car list)]
+        (let* ([item (car decl-list)]
                [ret (resolver env lev item)]
                [new-item (car ret)]
                [new-env (cdr ret)]
-               [rest-ret (resolve-list new-env lev (cdr list) resolver)]
+               [rest-ret (resolve-decl-list new-env lev (cdr decl-list) resolver)]
                [last-env (cdr rest-ret)])
           (cons (cons new-item (car rest-ret)) last-env))))
   (define (resolve-decl env lev decl)
@@ -62,7 +62,7 @@
                   [body (stx:fun-def-body decl)]
                   [pos (stx:fun-def-pos decl)]
                   [parms-lev (+ lev 1)]
-                  [ret1 (resolve-list env parms-lev parms resolve-parm-decl)]
+                  [ret1 (resolve-decl-list env parms-lev parms resolve-parm-decl)]
                   [new-parms (car ret1)]
                   [parms-env (cdr ret1)]
                   [ret2 (resolve-cmpd-stmt parms-env parms-lev body)]
@@ -112,13 +112,13 @@
   (define (resolve-cmpd-stmt env prev-lev cmpd-stmt)
     (define (resolve-in-decl env lev decl)
       (let ([ty (stx:var-decls-ty decl)]
-                    [var-list (stx:var-decls-decls decl)])
-                (resolve-var-decl-list env lev var-list ty)))
+            [var-list (stx:var-decls-decls decl)])
+        (resolve-var-decl-list env lev var-list ty)))
     (let* ([lev (+ prev-lev 1)]
            [decl-list (stx:cmpd-stmt-decls cmpd-stmt)]
            [stmt-list (stx:cmpd-stmt-stmts cmpd-stmt)]
            [pos (stx:cmpd-stmt-pos cmpd-stmt)]
-           [ret1 (resolve-list env lev decl-list resolve-in-decl)]
+           [ret1 (resolve-decl-list env lev decl-list resolve-in-decl)]
            [new-decl-list (car ret1)]
            [new-env (cdr ret1)]
            ;[ret2 (resolve-list env lev stmt-list resolve-stmt)]
