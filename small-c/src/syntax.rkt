@@ -16,7 +16,7 @@
 (struct while-stmt  (test body pos)           #:transparent)
 ;(struct for-stmt    (init test inc body pos)  #:transparent)
 (struct ret-stmt    (exp pos)                 #:transparent)
-(struct cmpd-stmt   (dcels stmts pos)         #:transparent)
+(struct cmpd-stmt   (decls stmts pos)         #:transparent)
 ;(struct print-stmt (exp pos) #:transparent)
 
 ;; expression
