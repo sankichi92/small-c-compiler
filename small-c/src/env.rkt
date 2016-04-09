@@ -24,6 +24,17 @@
                [last-env (cdr rest-ret)])
           (cons (cons new-item (car rest-ret)) last-env))))
   (define (resolve-decl env lev decl)
+    (define (resolve-parm-decl env lev parm)
+      (let* ([name (stx:parm-decl-name parm)]
+             [ty (stx:parm-decl-ty parm)]
+             [pos (stx:parm-decl-pos parm)]
+             [ret (env name)])
+        (if ret
+            (let ([kind (decl-kind ret)])
+              (if (eq? kind 'parm)
+                  (redef-err pos name)
+                  (register-parm env name ty pos)))
+            (register-parm env name ty pos))))
     (cond [(stx:var-decls? decl)
            (let ([ty (stx:var-decls-ty decl)]
                  [var-list (stx:var-decls-decls decl)])
@@ -98,18 +109,11 @@
                             (redef-warn pos name)])
                      (register-var env lev name ty pos))]))
           (register-var env lev name ty pos))))
-  (define (resolve-parm-decl env lev parm)
-    (let* ([name (stx:parm-decl-name parm)]
-           [ty (stx:parm-decl-ty parm)]
-           [pos (stx:parm-decl-pos parm)]
-           [ret (env name)])
-      (if ret
-          (let ([kind (decl-kind ret)])
-            (if (eq? kind 'parm)
-                (redef-err pos name)
-                (register-parm env name ty pos)))
-          (register-parm env name ty pos))))
   (define (resolve-cmpd-stmt env prev-lev cmpd-stmt)
+    (define (resolve-in-decl env lev decl)
+      (let ([ty (stx:var-decls-ty decl)]
+                    [var-list (stx:var-decls-decls decl)])
+                (resolve-var-decl-list env lev var-list ty)))
     (let* ([lev (+ prev-lev 1)]
            [decl-list (stx:cmpd-stmt-decls cmpd-stmt)]
            [stmt-list (stx:cmpd-stmt-stmts cmpd-stmt)]
@@ -121,10 +125,6 @@
            ;[new-stmt-list (car ret1)]
            )
       (cons (stx:cmpd-stmt new-decl-list stmt-list pos) new-env)))
-  (define (resolve-in-decl env lev decl)
-    (let ([ty (stx:var-decls-ty decl)]
-          [var-list (stx:var-decls-decls decl)])
-      (resolve-var-decl-list env lev var-list ty)))
   (define (register-var env lev name ty pos)
     (let* ([decl (decl name lev 'var ty)]
            [new-env (register env decl)])
