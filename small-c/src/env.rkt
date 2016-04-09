@@ -65,12 +65,11 @@
                   [ret1 (resolve-decl-list env parms-lev parms resolve-parm-decl)]
                   [new-parms (car ret1)]
                   [parms-env (cdr ret1)]
-                  [ret2 (resolve-cmpd-stmt parms-env parms-lev body)]
-                  [new-body (car ret2)]
-                  [ret (parms-env name)])
-              (if ret
-                  (let ([kind (decl-kind ret)]
-                        [type (decl-type ret)])
+                  [new-body (resolve-cmpd-stmt parms-env parms-lev body)]
+                  [ret2 (env name)])
+              (if ret2
+                  (let ([kind (decl-kind ret2)]
+                        [type (decl-type ret2)])
                     (if (or
                           (eq? kind 'var)
                           (eq? kind 'fun)
@@ -109,6 +108,35 @@
                          (redef-warn pos name)])
                   (register-var env lev name ty pos))))
           (register-var env lev name ty pos))))
+  (define (resolve-stmt-list env lev stmt-list)
+  (map (lambda (stmt)
+         (resolve-stmt env lev stmt))
+       stmt-list))
+  (define (resolve-stmt env lev stmt)
+    (cond [(null? stmt) '()]
+          [(list? stmt) (resolve-exp-list env lev stmt)]
+          [(stx:if-els-stmt? stmt)
+           (let* ([test (stx:if-els-stmt-test stmt)]
+                  [tbody (stx:if-els-stmt-tbody stmt)]
+                  [ebody (stx:if-els-stmt-ebody stmt)]
+                  [pos (stx:if-els-stmt-pos stmt)]
+                  [new-test (resolve-exp-list env lev test)]
+                  [new-tbody (resolve-stmt env lev tbody)]
+                  [new-ebody (resolve-stmt env lev ebody)])
+              (stx:if-els-stmt new-test new-tbody new-ebody pos))]
+          [(stx:while-stmt? stmt)
+           (let* ([test (stx:while-stmt-test stmt)]
+                  [body (stx:while-stmt-body stmt)]
+                  [pos (stx:while-stmt-pos stmt)]
+                  [new-test (resolve-exp-list env lev test)]
+                  [new-body (resolve-stmt env lev body)])
+              (stx:while-stmt new-test new-body pos))]
+          [(stx:ret-stmt? stmt)
+           (let* ([exp (stx:ret-stmt-exp stmt)]
+                  [pos (stx:ret-stmt-pos stmt)]
+                  [new-exp (resolve-exp-list env lev exp)])
+              (stx:ret-stmt new-exp pos))]
+          [(stx:cmpd-stmt? stmt) (resolve-cmpd-stmt env lev stmt)]))
   (define (resolve-cmpd-stmt env prev-lev cmpd-stmt)
     (define (resolve-in-decl env lev decl)
       (let ([ty (stx:var-decls-ty decl)]
@@ -121,10 +149,60 @@
            [ret1 (resolve-decl-list env lev decl-list resolve-in-decl)]
            [new-decl-list (car ret1)]
            [new-env (cdr ret1)]
-           ;[ret2 (resolve-list env lev stmt-list resolve-stmt)]
-           ;[new-stmt-list (car ret1)]
-           )
-      (cons (stx:cmpd-stmt new-decl-list stmt-list pos) new-env)))
+           [new-stmt-list (resolve-stmt-list env lev stmt-list)])
+      (cons (stx:cmpd-stmt new-decl-list new-stmt-list pos) new-env)))
+  (define (resolve-exp-list env lev exp-list)
+    (map (lambda (exp)
+           (resolve-exp env lev exp))
+         exp-list))
+  (define (resolve-exp env lev exp)
+    (cond [(stx:assign-exp? exp)
+           (let ([left (resolve-exp env lev (stx:assign-exp-left exp))]
+                 [right (resolve-exp env lev (stx:assign-exp-right exp))]
+                 [pos (stx:assign-exp-pos exp)])
+              (stx:assign-exp left right pos))]
+          [(stx:lop-exp? exp)
+           (let ([op (stx:lop-exp-op exp)]
+                 [left (resolve-exp env lev (stx:lop-exp-left exp))]
+                 [right (resolve-exp env lev (stx:lop-exp-right exp))]
+                 [pos (stx:lop-exp-pos exp)])
+              (stx:lop-exp op left right pos))]
+          [(stx:rop-exp? exp)
+           (let ([op (stx:rop-exp-op exp)]
+                 [left (resolve-exp env lev (stx:rop-exp-left exp))]
+                 [right (resolve-exp env lev (stx:rop-exp-right exp))]
+                 [pos (stx:rop-exp-pos exp)])
+              (stx:rop-exp op left right pos))]
+          [(stx:aop-exp? exp)
+           (let ([op (stx:aop-exp-op exp)]
+                 [left (resolve-exp env lev (stx:aop-exp-left exp))]
+                 [right (resolve-exp env lev (stx:aop-exp-right exp))]
+                 [pos (stx:aop-exp-pos exp)])
+              (stx:aop-exp op left right pos))]
+          [(stx:addr-exp? exp)
+           (let ([var (resolve-exp env lev (stx:addr-exp-var exp))]
+                 [pos (stx:addr-exp-pos exp)])
+              (stx:addr-exp var pos))]
+          [(stx:deref-exp? exp)
+           (let ([arg (resolve-exp env lev (stx:deref-exp-arg exp))]
+                 [pos (stx:deref-exp-pos exp)])
+              (stx:deref-exp arg pos))]
+          [(stx:fun-exp? exp)
+           (let* ([name (stx:fun-exp-name exp)]
+                  [args (resolve-exp-list env lev (stx:fun-exp-args exp))]
+                  [pos (stx:fun-exp-pos exp)]
+                  [decl (env name)])
+              (if decl
+                  (stx:fun-exp decl args pos)
+                  (unknown-err pos name)))]
+          [(stx:var-exp? exp)
+           (let* ([name (stx:var-exp-tgt exp)]
+                  [pos (stx:var-exp-pos exp)]
+                  [decl (env name)])
+              (if decl
+                  (stx:var-exp decl pos)
+                  (unknown-err pos name)))]
+          [(stx:lit-exp? exp)]))
   (define (register-var env lev name ty pos)
     (let* ([decl (decl name lev 'var ty)]
            [new-env (register env decl)])
@@ -154,7 +232,9 @@
     (eprintf (err-msg pos (format "name resolve warning: overwriting of parm ~a" name))))
   (define (redef-err pos name)
     (error (err-msg pos (format "name resolve error: redifinition of ~a" name))))
-  (car (resolve-list initial-env 0 ast resolve-decl)))
+  (define (unknown-err pos name)
+    (error (err-msg pos (format "name resolve error: unknown identifier ~a" name))))
+  (car (resolve-decl-list initial-env 0 ast resolve-decl)))
 
 (define (err-msg pos msg)
   (format "~a:~a: ~a\n" (position-line pos) (position-col pos) msg))
