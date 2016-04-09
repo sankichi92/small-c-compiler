@@ -34,20 +34,17 @@
                   [parm-tys (stx:fun-decl-parm-tys decl)]
                   [pos (stx:fun-decl-pos decl)]
                   [ret (env name)])
-             (if ret
-                 (let ([kind (decl-kind ret)]
-                       [type (decl-type ret)])
-                   (cond [(and (eq? kind 'var))
-                          (redef-err pos name)]
-                         [(and
-                           (or (eq? kind 'proto) (eq? kind 'fun))
-                           (not (equal? parm-tys (cddr type))))
-                          (redef-err pos name)]
-                         [(or (eq? kind 'proto) (eq? kind 'fun))
-                          (cons '() env)]
-                         [else
-                          (register-proto env name ret-ty parm-tys pos)]))
-                 (register-proto env name ret-ty parm-tys pos)))]
+              (if ret
+                  (let ([kind (decl-kind ret)]
+                        [type (decl-type ret)])
+                    (if (or
+                          (eq? kind 'var)
+                          (and
+                            (or (eq? kind 'proto) (eq? kind 'fun))
+                            (not (equal? parm-tys (cddr type)))))
+                        (redef-err pos name)
+                        (register-proto env name ret-ty parm-tys pos)))
+                  (register-proto env name ret-ty parm-tys pos)))]
           [(stx:fun-def? decl)
            (let* ([name (stx:fun-def-name decl)]
                   [ret-ty (stx:fun-def-ret-ty decl)]
@@ -61,19 +58,16 @@
                   [ret2 (resolve-cmpd-stmt parms-env parms-lev body)]
                   [new-body (car ret2)]
                   [ret (parms-env name)])
-             (if ret
-                 (let ([kind (decl-kind ret)]
-                       [type (decl-type ret)])
-                   (cond [(or (eq? kind 'var) (eq? kind 'fun))
-                          (redef-err pos name)]
-                         [(and
-                           (eq? kind 'proto)
-                           (not (equal? (map stx:parm-decl-ty parms) (cddr type))))
-                          (redef-err pos name)]
-                         [(eq? kind 'fun)
-                          (cons '() parms-env)]
-                         [else
-                          (register-fun env name ret-ty new-parms new-body pos)]))
+              (if ret
+                  (let ([kind (decl-kind ret)]
+                        [type (decl-type ret)])
+                    (if (or
+                          (or (eq? kind 'var) (eq? kind 'fun))
+                          (and
+                            (eq? kind 'proto)
+                            (not (equal? (map stx:parm-decl-ty parms) (cddr type)))))
+                        (redef-err pos name)
+                        (register-fun env name ret-ty new-parms new-body pos)))
                  (register-fun env name ret-ty new-parms new-body pos)))]))
   (define (resolve-var-decl-list env lev decl-list ty)
     (if (null? decl-list)
