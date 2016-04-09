@@ -5,6 +5,9 @@
 
 (struct decl (name lev kind type) #:transparent)
 
+(define (err-msg pos msg)
+  (format "~a:~a: ~a\n" (position-line pos) (position-col pos) msg))
+
 (define (name-resolver ast)
   (define initial-env (lambda (x) #f))
   (define (register env decl)
@@ -193,14 +196,20 @@
                   [pos (stx:fun-exp-pos exp)]
                   [decl (env name)])
               (if decl
-                  (stx:fun-exp decl args pos)
+                  (let ([kind (decl-kind decl)])
+                    (if (or (eq? kind 'var) (eq? kind 'parm))
+                        (error (err-msg pos (format "name resolve error: ~a is not a variable" name)))
+                        (stx:fun-exp decl args pos)))
                   (unknown-err pos name)))]
           [(stx:var-exp? exp)
            (let* ([name (stx:var-exp-tgt exp)]
                   [pos (stx:var-exp-pos exp)]
                   [decl (env name)])
               (if decl
-                  (stx:var-exp decl pos)
+                  (let ([kind (decl-kind decl)])
+                    (if (or (eq? kind 'fun) (eq? kind 'proto))
+                        (error (err-msg pos (format "name resolve error: ~a is not a function" name)))
+                        (stx:var-exp decl pos)))
                   (unknown-err pos name)))]
           [(stx:lit-exp? exp)]))
   (define (register-var env lev name ty pos)
@@ -235,6 +244,3 @@
   (define (unknown-err pos name)
     (error (err-msg pos (format "name resolve error: unknown identifier ~a" name))))
   (car (resolve-decl-list initial-env 0 ast resolve-decl)))
-
-(define (err-msg pos msg)
-  (format "~a:~a: ~a\n" (position-line pos) (position-col pos) msg))
