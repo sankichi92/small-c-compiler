@@ -20,15 +20,38 @@
           (var-decl 'a 'int '())))
       (list
         'a)
-      "#1")
+      "1")
+
+    (check-equal?
+      (traverser
+        decl-proc
+        stmt-proc
+        exp-proc
+        (list
+          (fun-def
+            'a
+            'void
+            (list (parm-decl 'b 'int '()))
+            (cmpd-stmt '() '(()) '())
+            '())))
+      (list
+        (fun-def
+          'a
+          'void
+          (list 'b)
+          (cmpd-stmt '() '(()) '())
+          '()))
+      "2")
 
   ))
 
 (define (decl-proc decl)
-  (cond [(var-decl? decl) (var-decl-name decl)]))
+  (cond [(var-decl? decl) (var-decl-name decl)]
+        [(fun-def? decl) decl]
+        [(parm-decl? decl) (parm-decl-name decl)]))
 
-(define (stmt-proc stmt) '())
+(define (stmt-proc stmt) stmt)
 
-(define (exp-proc exp) '())
+(define (exp-proc exp) exp)
 
 (run-tests traverser-tests)
