@@ -28,5 +28,5 @@ Temporary Items
 *~
 \#*\#
 
-small-c/src/compiled
+src/compiled
 *.tbl

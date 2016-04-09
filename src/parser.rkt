@@ -83,7 +83,7 @@
    (tokens tokens-with-value tokens-without-value)
    (grammar
     (program
-     ((external-declaration) (list $1))
+     ((external-declaration) (flatten (list $1)))
      ((program external-declaration) (flatten (list $1 $2))))
     (external-declaration
      ((declaration) $1)
@@ -120,7 +120,7 @@
      ((parameter-type-list COMMA parameter-declaration) `(,@$1 ,$3)))
     (parameter-declaration
      ((type-specifier parameter-declarator)
-      (stx:parm-decl (car $2) (format-pt-ty $1 (cdr $2)) $1-start-pos)))
+      (stx:parm-decl (car $2) (format-pt-ty $1 (cdr $2)) $2-start-pos)))
     (parameter-declarator
      ((ID) (cons $1 '()))
      ((* ID) (cons $2 'pointer)))

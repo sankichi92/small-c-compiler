@@ -1,7 +1,7 @@
 #lang racket
 (require parser-tools/lex
          (prefix-in stx: "syntax.rkt"))
-(provide name-resolver)
+(provide (all-defined-out))
 
 (struct decl (name lev kind type) #:transparent)
 
