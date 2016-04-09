@@ -91,6 +91,43 @@
           '()))
       "4")
 
+    (check-equal?
+      (traverser
+        decl-proc
+        stmt-proc
+        exp-proc
+        (list
+          (fun-def
+            'a
+            'void
+            '()
+            (cmpd-stmt
+              (list (var-decl 'b 'int (position 14 1 13)))
+              (list
+                (list
+                  (assign-exp
+                    (var-exp 'b (position 16 1 15))
+                    (lit-exp 0 (position 18 1 17))
+                    (position 17 1 16))))
+              (position 9 1 8))
+            (position 1 1 0))))
+      (list
+        (fun-def
+          'a
+          'void
+          '()
+          (cmpd-stmt
+            (list 'b)
+            (list
+              (list
+                (assign-exp
+                  (var-exp 'b (position 16 1 15))
+                  (lit-exp 1 (position 18 1 17))
+                  (position 17 1 16))))
+            (position 9 1 8))
+          (position 1 1 0)))
+      "5")
+
   ))
 
 (define (decl-proc decl)
