@@ -37,10 +37,24 @@
                   (redef-err pos name)
                   (register-parm env name ty pos)))
             (register-parm env name ty pos))))
-    (cond [(stx:var-decls? decl)
-           (let ([ty (stx:var-decls-ty decl)]
-                 [var-list (stx:var-decls-decls decl)])
-             (resolve-var-decl-list env lev var-list ty))]
+    (cond [(stx:var-decl? decl)
+           (let* ([name (stx:var-decl-name decl)]
+                  [ty (stx:var-decl-ty decl)]
+                  [pos (stx:var-decl-pos decl)]
+                  [ret (env name)])
+              (if ret
+                  (let ([kind (decl-kind ret)]
+                        [ret-lev (decl-lev ret)])
+                    (if (or
+                          (eq? kind 'fun)
+                          (eq? kind 'proto)
+                          (and (eq? kind 'var) (= ret-lev lev)))
+                        (redef-err pos name)
+                        (begin
+                          (cond [(eq? kind 'parm)
+                                 (redef-warn pos name)])
+                          (register-var env lev name ty pos))))
+                  (register-var env lev name ty pos)))]
           [(stx:fun-decl? decl)
            (let* ([name (stx:fun-decl-name decl)]
                   [ret-ty (stx:fun-decl-ret-ty decl)]
@@ -82,35 +96,6 @@
                         (redef-err pos name)
                         (register-fun env name ret-ty new-parms new-body pos)))
                  (register-fun env name ret-ty new-parms new-body pos)))]))
-  (define (resolve-var-decl-list env lev decl-list ty)
-    (if (null? decl-list)
-        (cons '() env)
-        (let* ([var (car decl-list)]
-               [ret (resolve-var-decl env lev var ty)]
-               [new-var (car ret)]
-               [new-env (cdr ret)]
-               [rest-ret (resolve-var-decl-list new-env lev (cdr decl-list) ty)]
-               [last-env (cdr rest-ret)])
-          (cons (cons new-var (car rest-ret)) last-env))))
-  (define (resolve-var-decl env lev var ty1)
-    (let* ([name (stx:var-decl-name var)]
-           [ty2 (stx:var-decl-ty var)]
-           [ty (format-type ty1 ty2)]
-           [pos (stx:var-decl-pos var)]
-           [ret (env name)])
-      (if ret
-          (let ([ret-kind (decl-kind ret)]
-                [ret-lev (decl-lev ret)])
-            (if (or
-                  (eq? ret-kind 'fun)
-                  (eq? ret-kind 'proto)
-                  (and (eq? ret-kind 'var) (= ret-lev lev)))
-                (redef-err pos name)
-                (begin
-                  (cond [(eq? ret-kind 'parm)
-                         (redef-warn pos name)])
-                  (register-var env lev name ty pos))))
-          (register-var env lev name ty pos))))
   (define (resolve-stmt-list env lev stmt-list)
   (map (lambda (stmt)
          (resolve-stmt env lev stmt))
@@ -141,15 +126,11 @@
               (stx:ret-stmt new-exp pos))]
           [(stx:cmpd-stmt? stmt) (resolve-cmpd-stmt env lev stmt)]))
   (define (resolve-cmpd-stmt env prev-lev cmpd-stmt)
-    (define (resolve-in-decl env lev decl)
-      (let ([ty (stx:var-decls-ty decl)]
-            [var-list (stx:var-decls-decls decl)])
-        (resolve-var-decl-list env lev var-list ty)))
     (let* ([lev (+ prev-lev 1)]
            [decl-list (stx:cmpd-stmt-decls cmpd-stmt)]
            [stmt-list (stx:cmpd-stmt-stmts cmpd-stmt)]
            [pos (stx:cmpd-stmt-pos cmpd-stmt)]
-           [ret1 (resolve-decl-list env lev decl-list resolve-in-decl)]
+           [ret1 (resolve-decl-list env lev decl-list resolve-decl)]
            [new-decl-list (car ret1)]
            [new-env (cdr ret1)]
            [new-stmt-list (resolve-stmt-list env lev stmt-list)])
@@ -230,13 +211,6 @@
     (let* ([decl (decl name 1 'parm ty)]
            [new-env (register env decl)])
       (cons (stx:parm-decl decl ty pos) new-env)))
-  (define (format-type ty1 ty2)
-    (cond [(null? ty2)
-           ty1]
-          [(eq? 'array (car ty2))
-           (list 'array ty1 (cdr ty2))]
-          [(eq? 'pointer (car ty2))
-           (list 'pointer (format-type ty1 (cdr ty2)))]))
   (define (redef-warn pos name)
     (eprintf (err-msg pos (format "name resolve warning: overwriting of parm ~a" name))))
   (define (redef-err pos name)

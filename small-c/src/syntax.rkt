@@ -3,7 +3,6 @@
 
 ;; declaration/definition
 
-(struct var-decls (ty decls pos)               #:transparent)
 (struct var-decl  (name ty pos)                #:transparent)
 (struct parm-decl (name ty pos)                #:transparent)
 (struct fun-decl  (name ret-ty parm-tys pos)   #:transparent)
@@ -17,7 +16,6 @@
 ;(struct for-stmt    (init test inc body pos)  #:transparent)
 (struct ret-stmt    (exp pos)                 #:transparent)
 (struct cmpd-stmt   (decls stmts pos)         #:transparent)
-;(struct print-stmt (exp pos) #:transparent)
 
 ;; expression
 
