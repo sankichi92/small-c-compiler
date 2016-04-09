@@ -15,28 +15,17 @@
       (if (eq? name (decl-name decl))
           decl
           (env name))))
-  (define (resolve-decl-list env lev decl-list resolver)
+  (define (resolve-decl-list env lev decl-list)
     (if (null? decl-list)
         (cons '() env)
-        (let* ([item (car decl-list)]
-               [ret (resolver env lev item)]
-               [new-item (car ret)]
+        (let* ([decl (car decl-list)]
+               [ret (resolve-decl env lev decl)]
+               [new-decl (car ret)]
                [new-env (cdr ret)]
-               [rest-ret (resolve-decl-list new-env lev (cdr decl-list) resolver)]
+               [rest-ret (resolve-decl-list new-env lev (cdr decl-list))]
                [last-env (cdr rest-ret)])
-          (cons (cons new-item (car rest-ret)) last-env))))
+          (cons (cons new-decl (car rest-ret)) last-env))))
   (define (resolve-decl env lev decl)
-    (define (resolve-parm-decl env lev parm)
-      (let* ([name (stx:parm-decl-name parm)]
-             [ty (stx:parm-decl-ty parm)]
-             [pos (stx:parm-decl-pos parm)]
-             [ret (env name)])
-        (if ret
-            (let ([kind (decl-kind ret)])
-              (if (eq? kind 'parm)
-                  (redef-err pos name)
-                  (register-parm env name ty pos)))
-            (register-parm env name ty pos))))
     (cond [(stx:var-decl? decl)
            (let* ([name (stx:var-decl-name decl)]
                   [ty (stx:var-decl-ty decl)]
@@ -78,11 +67,11 @@
                   [parms (stx:fun-def-parms decl)]
                   [body (stx:fun-def-body decl)]
                   [pos (stx:fun-def-pos decl)]
-                  [parms-lev (+ lev 1)]
-                  [ret1 (resolve-decl-list env parms-lev parms resolve-parm-decl)]
+                  [new-lev (+ lev 1)]
+                  [ret1 (resolve-decl-list env new-lev parms resolve-decl)]
                   [new-parms (car ret1)]
                   [parms-env (cdr ret1)]
-                  [new-body (resolve-cmpd-stmt parms-env parms-lev body)]
+                  [new-body (resolve-stmt parms-env new-lev body)]
                   [ret2 (env name)])
               (if ret2
                   (let ([kind (decl-kind ret2)]
@@ -95,11 +84,22 @@
                             (not (equal? (map stx:parm-decl-ty parms) (cddr type)))))
                         (redef-err pos name)
                         (register-fun env name ret-ty new-parms new-body pos)))
-                 (register-fun env name ret-ty new-parms new-body pos)))]))
+                 (register-fun env name ret-ty new-parms new-body pos)))]
+          [(stx:parm-decl? decl)
+           (let* ([name (stx:parm-decl-name decl)]
+                  [ty (stx:parm-decl-ty decl)]
+                  [pos (stx:parm-decl-pos decl)]
+                  [ret (env name)])
+              (if ret
+                  (let ([kind (decl-kind ret)])
+                    (if (eq? kind 'parm)
+                      (redef-err pos name)
+                      (register-parm env name ty pos)))
+                  (register-parm env name ty pos)))]))
   (define (resolve-stmt-list env lev stmt-list)
-  (map (lambda (stmt)
-         (resolve-stmt env lev stmt))
-       stmt-list))
+    (map (lambda (stmt)
+           (resolve-stmt env lev stmt))
+         stmt-list))
   (define (resolve-stmt env lev stmt)
     (cond [(null? stmt) '()]
           [(list? stmt) (resolve-exp-list env lev stmt)]
@@ -124,23 +124,24 @@
                   [pos (stx:ret-stmt-pos stmt)]
                   [new-exp (resolve-exp-list env lev exp)])
               (stx:ret-stmt new-exp pos))]
-          [(stx:cmpd-stmt? stmt) (resolve-cmpd-stmt env lev stmt)]))
-  (define (resolve-cmpd-stmt env prev-lev cmpd-stmt)
-    (let* ([lev (+ prev-lev 1)]
-           [decl-list (stx:cmpd-stmt-decls cmpd-stmt)]
-           [stmt-list (stx:cmpd-stmt-stmts cmpd-stmt)]
-           [pos (stx:cmpd-stmt-pos cmpd-stmt)]
-           [ret1 (resolve-decl-list env lev decl-list resolve-decl)]
-           [new-decl-list (car ret1)]
-           [new-env (cdr ret1)]
-           [new-stmt-list (resolve-stmt-list env lev stmt-list)])
-      (cons (stx:cmpd-stmt new-decl-list new-stmt-list pos) new-env)))
+          [(stx:cmpd-stmt? stmt)
+           (let* ([new-lev (+ lev 1)]
+                  [decl-list (stx:cmpd-stmt-decls stmt)]
+                  [stmt-list (stx:cmpd-stmt-stmts stmt)]
+                  [pos (stx:cmpd-stmt-pos stmt)]
+                  [ret1 (resolve-decl-list env new-lev decl-list resolve-decl)]
+                  [new-decl-list (car ret1)]
+                  [new-env (cdr ret1)]
+                  [new-stmt-list (resolve-stmt-list env new-lev stmt-list)])
+              (cons (stx:cmpd-stmt new-decl-list new-stmt-list pos) new-env))]))
   (define (resolve-exp-list env lev exp-list)
     (map (lambda (exp)
            (resolve-exp env lev exp))
          exp-list))
   (define (resolve-exp env lev exp)
-    (cond [(stx:assign-exp? exp)
+    (cond [(null? exp) '()]
+          [(list? exp) (resolve-exp exp)]
+          [(stx:assign-exp? exp)
            (let ([left (resolve-exp env lev (stx:assign-exp-left exp))]
                  [right (resolve-exp env lev (stx:assign-exp-right exp))]
                  [pos (stx:assign-exp-pos exp)])
@@ -217,4 +218,4 @@
     (error (err-msg pos (format "name resolve error: redifinition of ~a" name))))
   (define (unknown-err pos name)
     (error (err-msg pos (format "name resolve error: unknown identifier ~a" name))))
-  (car (resolve-decl-list initial-env 0 ast resolve-decl)))
+  (car (resolve-decl-list initial-env 0 ast)))
