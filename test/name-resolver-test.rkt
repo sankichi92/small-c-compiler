@@ -11,7 +11,7 @@
     "Tests for name-resolver.rkt"
 
     (check-equal?
-      (name-resolver
+      (name-resolve
         (list
           (var-decl 'a 'int '())))
       (list

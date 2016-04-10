@@ -12,7 +12,7 @@
     "Tests for traverser.rkt"
 
     (check-equal?
-      (traverser
+      (traverse
         decl-proc
         stmt-proc
         exp-proc
@@ -23,7 +23,7 @@
       "1")
 
     (check-equal?
-      (traverser
+      (traverse
         decl-proc
         stmt-proc
         exp-proc
@@ -44,7 +44,7 @@
       "2")
 
     (check-equal?
-      (traverser
+      (traverse
         decl-proc
         stmt-proc
         exp-proc
@@ -71,7 +71,7 @@
       "3")
 
     (check-equal?
-      (traverser
+      (traverse
         decl-proc
         stmt-proc
         exp-proc
@@ -92,7 +92,7 @@
       "4")
 
     (check-equal?
-      (traverser
+      (traverse
         decl-proc
         stmt-proc
         exp-proc

@@ -1,14 +1,12 @@
 #lang racket
 (require parser-tools/lex
-         (prefix-in stx: "syntax.rkt"))
-(provide (all-defined-out))
+         (prefix-in stx: "syntax.rkt")
+         "utils.rkt")
+(provide decl name-resolve)
 
 (struct decl (name lev kind type) #:transparent)
 
-(define (err-msg pos msg)
-  (format "~a:~a: ~a\n" (position-line pos) (position-col pos) msg))
-
-(define (name-resolver ast)
+(define (name-resolve ast)
   (define initial-env (lambda (x) #f))
   (define (register env decl)
     (lambda (name)
