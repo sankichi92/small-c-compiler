@@ -1,8 +1,9 @@
 #lang racket
 (require parser-tools/lex
          (prefix-in stx: "syntax.rkt")
-         "utils.rkt")
-(provide decl name-resolve)
+         "utils.rkt"
+         "parser.rkt")
+(provide decl name-resolve name-resolve-str)
 
 (struct decl (name lev kind type) #:transparent)
 
@@ -55,7 +56,7 @@
                           (eq? kind 'var)
                           (and
                             (or (eq? kind 'proto) (eq? kind 'fun))
-                            (not (equal? parm-tys (cddr type)))))
+                            (not (equal? (list* 'fun ret-ty parm-tys) type))))
                         (redef-err pos name)
                         (register-proto env name ret-ty parm-tys pos)))
                   (register-proto env name ret-ty parm-tys pos)))]
@@ -66,7 +67,7 @@
                   [body (stx:fun-def-body decl)]
                   [pos (stx:fun-def-pos decl)]
                   [new-lev (+ lev 1)]
-                  [ret1 (resolve-decl-list env new-lev parms resolve-decl)]
+                  [ret1 (resolve-decl-list env new-lev parms)]
                   [new-parms (car ret1)]
                   [parms-env (cdr ret1)]
                   [new-body (resolve-stmt parms-env new-lev body)]
@@ -79,7 +80,7 @@
                           (eq? kind 'fun)
                           (and
                             (eq? kind 'proto)
-                            (not (equal? (map stx:parm-decl-ty parms) (cddr type)))))
+                            (not (equal? (list* 'fun ret-ty (map stx:parm-decl-ty parms)) type))))
                         (redef-err pos name)
                         (register-fun env name ret-ty new-parms new-body pos)))
                  (register-fun env name ret-ty new-parms new-body pos)))]
@@ -127,11 +128,11 @@
                   [decl-list (stx:cmpd-stmt-decls stmt)]
                   [stmt-list (stx:cmpd-stmt-stmts stmt)]
                   [pos (stx:cmpd-stmt-pos stmt)]
-                  [ret1 (resolve-decl-list env new-lev decl-list resolve-decl)]
+                  [ret1 (resolve-decl-list env new-lev decl-list)]
                   [new-decl-list (car ret1)]
                   [new-env (cdr ret1)]
-                  [new-stmt-list (resolve-stmt-list env new-lev stmt-list)])
-              (cons (stx:cmpd-stmt new-decl-list new-stmt-list pos) new-env))]))
+                  [new-stmt-list (resolve-stmt-list new-env new-lev stmt-list)])
+              (stx:cmpd-stmt new-decl-list new-stmt-list pos))]))
   (define (resolve-exp-list env lev exp-list)
     (map (lambda (exp)
            (resolve-exp env lev exp))
@@ -178,7 +179,7 @@
               (if decl
                   (let ([kind (decl-kind decl)])
                     (if (or (eq? kind 'var) (eq? kind 'parm))
-                        (error (err-msg pos (format "name resolve error: ~a is not a variable" name)))
+                        (error 'name-resolve-error (err-msg pos (format "~a is not a function" name)))
                         (stx:fun-exp decl args pos)))
                   (unknown-err pos name)))]
           [(stx:var-exp? exp)
@@ -188,7 +189,7 @@
               (if decl
                   (let ([kind (decl-kind decl)])
                     (if (or (eq? kind 'fun) (eq? kind 'proto))
-                        (error (err-msg pos (format "name resolve error: ~a is not a function" name)))
+                        (error 'name-resolve-error (err-msg pos (format "~a is not a variable" name)))
                         (stx:var-exp decl pos)))
                   (unknown-err pos name)))]
           [(stx:lit-exp? exp)]))
@@ -211,9 +212,12 @@
            [new-env (register env decl)])
       (cons (stx:parm-decl decl ty pos) new-env)))
   (define (redef-warn pos name)
-    (eprintf (err-msg pos (format "name resolve warning: overwriting of parm ~a" name))))
+    (eprintf (err-msg pos (format "warning: overwriting of parm ~a" name))))
   (define (redef-err pos name)
-    (error (err-msg pos (format "name resolve error: redifinition of ~a" name))))
+    (error 'name-resolve-error (err-msg pos (format "redifinition of ~a" name))))
   (define (unknown-err pos name)
-    (error (err-msg pos (format "name resolve error: unknown identifier ~a" name))))
+    (error 'name-resolve-error (err-msg pos (format "unknown identifier ~a" name))))
   (car (resolve-decl-list initial-env 0 ast)))
+
+(define (name-resolve-str str)
+  (name-resolve (parse-string str)))
