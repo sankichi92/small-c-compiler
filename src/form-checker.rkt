@@ -21,16 +21,16 @@
                                       (eq? (car type) 'array))])
                         (not array?))))
            exp
-           (error
-             'form-error
-             (err-msg pos "operator '=' has only a variable, a pointer or an array as left operand")))]
+           (form-err pos "="))]
       [(stx:addr-exp var pos)
        (if (stx:var-exp? var)
            exp
-           (error
-             'form-error
-             (err-msg pos "operator '&' has only a variable, a pointer or an array as operand")))]
+           (form-err pos "&"))]
       [else exp]))
+  (define (form-err pos op)
+    (error
+      'form-check-error
+      (err-msg pos (format "operator '~a' has only a variable, a pointer or an array as operand" op))))
   (traverse check-decl check-stmt check-exp ast))
 
 (define (form-check-str str)
