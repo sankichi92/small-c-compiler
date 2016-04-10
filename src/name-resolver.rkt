@@ -1,17 +1,16 @@
 #lang racket
 (require parser-tools/lex
          (prefix-in stx: "syntax.rkt")
+         (prefix-in ett: "entity.rkt")
          "utils.rkt"
          "parser.rkt")
-(provide (all-defined-out))
-
-(struct decl (name lev kind type) #:transparent)
+(provide name-resolve name-resolve-str)
 
 (define (name-resolve ast)
   (define initial-env (lambda (x) #f))
   (define (register env decl)
     (lambda (name)
-      (if (eq? name (decl-name decl))
+      (if (eq? name (ett:decl-name decl))
           decl
           (env name))))
   (define (resolve-decl-list env lev decl-list)
@@ -29,8 +28,8 @@
       [(stx:var-decl name ty pos)
        (let ([obj (env name)])
          (if (and obj
-                  (let ([kind (decl-kind obj)]
-                        [obj-lev (decl-lev obj)])
+                  (let ([kind (ett:decl-kind obj)]
+                        [obj-lev (ett:decl-lev obj)])
                     (or
                       (and (or (eq? kind 'fun)
                                (eq? kind 'proto))
@@ -45,28 +44,28 @@
                                    (format "warning: overwriting of parm ~a" name)))])
                         #f))))
              (redef-err pos name)
-             (let* ([new-obj (decl name lev 'var ty)]
+             (let* ([new-obj (ett:decl name lev 'var ty)]
                     [new-env (register env new-obj)])
                (cons (stx:var-decl new-obj ty pos) new-env))))]
       [(stx:fun-decl name ret-ty parm-tys pos)
        (let ([obj (env name)])
          (if (and obj
-                  (let ([kind (decl-kind obj)]
-                        [type (decl-type obj)])
+                  (let ([kind (ett:decl-kind obj)]
+                        [type (ett:decl-type obj)])
                     (or
                       (eq? kind 'var)
                       (and
                         (or (eq? kind 'proto) (eq? kind 'fun))
                         (not (equal? (list* 'fun ret-ty parm-tys) type))))))
              (redef-err pos name)
-             (let* ([new-obj (decl name 0 'proto (list* 'fun ret-ty parm-tys))]
+             (let* ([new-obj (ett:decl name 0 'proto (list* 'fun ret-ty parm-tys))]
                     [new-env (register env new-obj)])
                (cons (stx:fun-decl new-obj ret-ty parm-tys pos) new-env))))]
       [(stx:fun-def name ret-ty parms body pos)
        (let ([obj (env name)])
          (if (and obj
-                  (let ([kind (decl-kind obj)]
-                       [type (decl-type obj)])
+                  (let ([kind (ett:decl-kind obj)]
+                       [type (ett:decl-type obj)])
                     (or
                       (eq? kind 'var)
                       (eq? kind 'fun)
@@ -76,7 +75,7 @@
              (redef-err pos name)
              (let* ([parm-tys (map stx:parm-decl-ty parms)]
                     [type (list* 'fun ret-ty parm-tys)]
-                    [new-obj (decl name 0 'fun type)]
+                    [new-obj (ett:decl name 0 'fun type)]
                     [new-env (register env new-obj)]
                     [new-lev (+ lev 1)]
                     [ret (resolve-decl-list new-env new-lev parms)]
@@ -87,10 +86,10 @@
       [(stx:parm-decl name ty pos)
        (let ([obj (env name)])
          (if (and obj
-                  (let ([kind (decl-kind obj)])
+                  (let ([kind (ett:decl-kind obj)])
                     (eq? kind 'parm)))
              (redef-err pos name)
-             (let* ([new-obj (decl name 1 'parm ty)]
+             (let* ([new-obj (ett:decl name 1 'parm ty)]
                     [new-env (register env new-obj)])
                (cons (stx:parm-decl new-obj ty pos) new-env))))]))
   (define (resolve-stmt-list env lev stmt-list)
@@ -153,7 +152,7 @@
       [(stx:fun-exp name args pos)
        (let ([obj (env name)])
          (if obj
-             (let ([kind (decl-kind obj)])
+             (let ([kind (ett:decl-kind obj)])
                (if (or (eq? kind 'var) (eq? kind 'parm))
                    (nr-err pos (format "~a is not a function" name))
                    (stx:fun-exp obj args pos)))
@@ -161,7 +160,7 @@
       [(stx:var-exp tgt pos)
        (let ([obj (env tgt)])
          (if obj
-             (let ([kind (decl-kind obj)])
+             (let ([kind (ett:decl-kind obj)])
                (if (or (eq? kind 'fun) (eq? kind 'proto))
                    (nr-err pos (format "~a is not a variable" tgt))
                    (stx:var-exp obj pos)))

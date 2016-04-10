@@ -2,8 +2,7 @@
 (require rackunit
          parser-tools/lex
          "../src/syntax.rkt"
-         "../src/parser.rkt"
-         "../src/name-resolver.rkt"
+         "../src/entity.rkt"
          "../src/deference-checker.rkt")
 (require rackunit/text-ui)
 (provide deference-checker-tests)

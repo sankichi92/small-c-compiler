@@ -1,9 +1,10 @@
 #lang racket
 (require parser-tools/lex
          (prefix-in stx: "syntax.rkt")
+         (prefix-in ett: "entity.rkt")
          "utils.rkt"
          "traverser.rkt"
-         (prefix-in nr: "name-resolver.rkt"))
+         "name-resolver.rkt")
 (provide deference-check deference-check-str)
 
 (define (deference-check ast)
@@ -15,7 +16,7 @@
        (if (or (stx:deref-exp? left)
                 (and (stx:var-exp? left)
                      (let* ([decl (stx:var-exp-tgt left)]
-                            [type (nr:decl-type decl)]
+                            [type (ett:decl-type decl)]
                             [array? (if (eq? type 'int)
                                       #f
                                       (eq? (car type) 'array))])
@@ -34,4 +35,4 @@
   (traverse check-decl check-stmt check-exp ast))
 
 (define (deference-check-str str)
-  (deference-check (nr:name-resolve-str str)))
+  (deference-check (name-resolve-str str)))

@@ -2,6 +2,7 @@
 (require rackunit
          parser-tools/lex
          "../src/syntax.rkt"
+         "../src/entity.rkt"
          "../src/name-resolver.rkt")
 (require rackunit/text-ui)
 (provide name-resolver-tests)
