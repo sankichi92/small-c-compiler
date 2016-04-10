@@ -115,7 +115,7 @@
   (define (resolve-exp env lev exp)
     (match exp
       ['() '()]
-      [(cons _ _) (resolve-exp-list exp)]
+      [(cons _ _) (resolve-exp-list env lev exp)]
       [(stx:assign-exp left right pos)
        (let ([new-left (resolve-exp env lev left)]
              [new-right (resolve-exp env lev right)])
