@@ -24,63 +24,75 @@
                [rest-ret (resolve-decl-list new-env lev (cdr decl-list))]
                [last-env (cdr rest-ret)])
           (cons (cons new-decl (car rest-ret)) last-env))))
-  (define (resolve-decl env lev decl)
-    (match decl
+  (define (resolve-decl env lev dcl)
+    (match dcl
       [(stx:var-decl name ty pos)
-       (let ([ret (env name)])
-         (if ret
-             (let ([kind (decl-kind ret)]
-                   [ret-lev (decl-lev ret)])
-               (if (or
-                     (eq? kind 'fun)
-                     (eq? kind 'proto)
-                     (and (eq? kind 'var) (= ret-lev lev)))
-                   (redef-err pos name)
-                   (begin
-                     (cond [(eq? kind 'parm)
-                            (redef-warn pos name)])
-                     (register-var env lev name ty pos))))
-             (register-var env lev name ty pos)))]
+       (let ([obj (env name)])
+         (if (and obj
+                  (let ([kind (decl-kind obj)]
+                        [obj-lev (decl-lev obj)])
+                    (or
+                      (and (or (eq? kind 'fun)
+                               (eq? kind 'proto))
+                           (= lev 0))
+                      (and (eq? kind 'var)
+                           (= obj-lev lev))
+                      (begin
+                        (cond [(eq? kind 'parm)
+                               (eprintf
+                                 (err-msg
+                                   pos
+                                   (format "warning: overwriting of parm ~a" name)))])
+                        #f))))
+             (redef-err pos name)
+             (let* ([new-obj (decl name lev 'var ty)]
+                    [new-env (register env new-obj)])
+               (cons (stx:var-decl new-obj ty pos) new-env))))]
       [(stx:fun-decl name ret-ty parm-tys pos)
-       (let ([ret (env name)])
-         (if ret
-             (let ([kind (decl-kind ret)]
-                   [type (decl-type ret)])
-               (if (or
-                     (eq? kind 'var)
-                     (and
-                       (or (eq? kind 'proto) (eq? kind 'fun))
-                       (not (equal? (list* 'fun ret-ty parm-tys) type))))
-                   (redef-err pos name)
-                   (register-proto env name ret-ty parm-tys pos)))
-             (register-proto env name ret-ty parm-tys pos)))]
+       (let ([obj (env name)])
+         (if (and obj
+                  (let ([kind (decl-kind obj)]
+                        [type (decl-type obj)])
+                    (or
+                      (eq? kind 'var)
+                      (and
+                        (or (eq? kind 'proto) (eq? kind 'fun))
+                        (not (equal? (list* 'fun ret-ty parm-tys) type))))))
+             (redef-err pos name)
+             (let* ([new-obj (decl name 0 'proto (list* 'fun ret-ty parm-tys))]
+                    [new-env (register env new-obj)])
+               (cons (stx:fun-decl new-obj ret-ty parm-tys pos) new-env))))]
       [(stx:fun-def name ret-ty parms body pos)
-       (let* ([new-lev (+ lev 1)]
-              [ret1 (resolve-decl-list env new-lev parms)]
-              [new-parms (car ret1)]
-              [parms-env (cdr ret1)]
-              [new-body (resolve-stmt parms-env new-lev body)]
-              [ret2 (env name)])
-         (if ret2
-             (let ([kind (decl-kind ret2)]
-                   [type (decl-type ret2)])
-               (if (or
-                     (eq? kind 'var)
-                     (eq? kind 'fun)
-                     (and
-                       (eq? kind 'proto)
-                       (not (equal? (list* 'fun ret-ty (map stx:parm-decl-ty parms)) type))))
-                   (redef-err pos name)
-                   (register-fun env name ret-ty new-parms new-body pos)))
-            (register-fun env name ret-ty new-parms new-body pos)))]
+       (let ([obj (env name)])
+         (if (and obj
+                  (let ([kind (decl-kind obj)]
+                       [type (decl-type obj)])
+                    (or
+                      (eq? kind 'var)
+                      (eq? kind 'fun)
+                      (and
+                        (eq? kind 'proto)
+                        (not (equal? (list* 'fun ret-ty (map stx:parm-decl-ty parms)) type))))))
+             (redef-err pos name)
+             (let* ([parm-tys (map stx:parm-decl-ty parms)]
+                    [type (list* 'fun ret-ty parm-tys)]
+                    [new-obj (decl name 0 'fun type)]
+                    [new-env (register env new-obj)]
+                    [new-lev (+ lev 1)]
+                    [ret (resolve-decl-list new-env new-lev parms)]
+                    [new-parms (car ret)]
+                    [parms-env (cdr ret)]
+                    [new-body (resolve-stmt parms-env new-lev body)])
+               (cons (stx:fun-def new-obj ret-ty new-parms new-body pos) new-env))))]
       [(stx:parm-decl name ty pos)
-       (let ([ret (env name)])
-         (if ret
-             (let ([kind (decl-kind ret)])
-               (if (eq? kind 'parm)
-                 (redef-err pos name)
-                 (register-parm env name ty pos)))
-             (register-parm env name ty pos)))]))
+       (let ([obj (env name)])
+         (if (and obj
+                  (let ([kind (decl-kind obj)])
+                    (eq? kind 'parm)))
+             (redef-err pos name)
+             (let* ([new-obj (decl name 1 'parm ty)]
+                    [new-env (register env new-obj)])
+               (cons (stx:parm-decl new-obj ty pos) new-env))))]))
   (define (resolve-stmt-list env lev stmt-list)
     (map (lambda (stmt)
            (resolve-stmt env lev stmt))
@@ -91,9 +103,9 @@
       [(cons _ _) (resolve-exp-list env lev stmt)]
       [(stx:cmpd-stmt decls stmts pos)
        (let* ([new-lev (+ lev 1)]
-              [ret1 (resolve-decl-list env new-lev decls)]
-              [new-decls (car ret1)]
-              [new-env (cdr ret1)]
+              [ret (resolve-decl-list env new-lev decls)]
+              [new-decls (car ret)]
+              [new-env (cdr ret)]
               [new-stmts (resolve-stmt-list new-env new-lev stmts)])
          (stx:cmpd-stmt new-decls new-stmts pos))]
       [(stx:if-els-stmt test tbody ebody pos)
@@ -139,46 +151,28 @@
        (let ([new-arg (resolve-exp env lev arg)])
          (stx:deref-exp new-arg pos))]
       [(stx:fun-exp name args pos)
-       (let ([ret (env name)])
-         (if ret
-             (let ([kind (decl-kind ret)])
+       (let ([obj (env name)])
+         (if obj
+             (let ([kind (decl-kind obj)])
                (if (or (eq? kind 'var) (eq? kind 'parm))
-                   (error 'name-resolve-error (err-msg pos (format "~a is not a function" name)))
-                   (stx:fun-exp ret args pos)))
+                   (nr-err pos (format "~a is not a function" name))
+                   (stx:fun-exp obj args pos)))
              (unknown-err pos name)))]
       [(stx:var-exp tgt pos)
-       (let ([ret (env tgt)])
-         (if ret
-             (let ([kind (decl-kind ret)])
+       (let ([obj (env tgt)])
+         (if obj
+             (let ([kind (decl-kind obj)])
                (if (or (eq? kind 'fun) (eq? kind 'proto))
-                   (error 'name-resolve-error (err-msg pos (format "~a is not a variable" tgt)))
-                   (stx:var-exp ret pos)))
+                   (nr-err pos (format "~a is not a variable" tgt))
+                   (stx:var-exp obj pos)))
              (unknown-err pos tgt)))]
       [else exp]))
-  (define (register-var env lev name ty pos)
-    (let* ([decl (decl name lev 'var ty)]
-           [new-env (register env decl)])
-      (cons (stx:var-decl decl ty pos) new-env)))
-  (define (register-proto env name ret-ty parm-tys pos)
-    (let* ([decl (decl name 0 'proto (list* 'fun ret-ty parm-tys))]
-           [new-env (register env decl)])
-      (cons (stx:fun-decl decl ret-ty parm-tys pos) new-env)))
-  (define (register-fun env name ret-ty parms body pos)
-    (let* ([parm-tys (map stx:parm-decl-ty parms)]
-           [type (list* 'fun ret-ty parm-tys)]
-           [decl (decl name 0 'fun type)]
-           [new-env (register env decl)])
-      (cons (stx:fun-def decl ret-ty parms body pos) new-env)))
-  (define (register-parm env name ty pos)
-    (let* ([decl (decl name 1 'parm ty)]
-           [new-env (register env decl)])
-      (cons (stx:parm-decl decl ty pos) new-env)))
-  (define (redef-warn pos name)
-    (eprintf (err-msg pos (format "warning: overwriting of parm ~a" name))))
+  (define (nr-err pos msg)
+    (error 'name-resolve-error (err-msg pos msg)))
   (define (redef-err pos name)
-    (error 'name-resolve-error (err-msg pos (format "redifinition of ~a" name))))
+    (nr-err pos (format "redifinition of ~a" name)))
   (define (unknown-err pos name)
-    (error 'name-resolve-error (err-msg pos (format "unknown identifier ~a" name))))
+    (nr-err pos (format "unknown identifier ~a" name)))
   (car (resolve-decl-list initial-env 0 ast)))
 
 (define (name-resolve-str str)
