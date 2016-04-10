@@ -4,9 +4,9 @@
          "utils.rkt"
          "traverser.rkt"
          (prefix-in nr: "name-resolver.rkt"))
-(provide form-check form-check-str)
+(provide deference-check deference-check-str)
 
-(define (form-check ast)
+(define (deference-check ast)
   (define (check-decl decl) decl)
   (define (check-stmt stmt) stmt)
   (define (check-exp exp)
@@ -29,9 +29,9 @@
       [else exp]))
   (define (form-err pos op)
     (error
-      'form-check-error
+      'deference-check-error
       (err-msg pos (format "operator '~a' has only a variable, a pointer or an array as operand" op))))
   (traverse check-decl check-stmt check-exp ast))
 
-(define (form-check-str str)
-  (form-check (nr:name-resolve-str str)))
+(define (deference-check-str str)
+  (deference-check (nr:name-resolve-str str)))
