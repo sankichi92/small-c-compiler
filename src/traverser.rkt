@@ -1,9 +1,8 @@
 #lang racket
-(require parser-tools/lex
-         (prefix-in stx: "syntax.rkt"))
-(provide traverser)
+(require (prefix-in stx: "syntax.rkt"))
+(provide traverse)
 
-(define (traverser decl-proc stmt-proc exp-proc ast)
+(define (traverse decl-proc stmt-proc exp-proc ast)
   (define (traverse-decl decl)
     (let ([new-decl
            (cond [(stx:fun-def? decl)
@@ -12,9 +11,9 @@
                          [parms (stx:fun-def-parms decl)]
                          [body (stx:fun-def-body decl)]
                          [pos (stx:fun-def-pos decl)]
-                         [new-params (map traverse-decl parms)]
+                         [new-parms (map traverse-decl parms)]
                          [new-body (traverse-stmt body)])
-                    (stx:fun-def name ret-ty new-params new-body pos))]
+                    (stx:fun-def name ret-ty new-parms new-body pos))]
                  [else decl])])
       (decl-proc new-decl)))
   (define (traverse-stmt stmt)
@@ -131,4 +130,4 @@
           [(stx:var-exp exp) exp]
           [(stx:lit-exp exp) exp]
           [else exp]))
-  (traverser foo-decl foo-stmt foo-exp ast))
+  (traverse foo-decl foo-stmt foo-exp ast))

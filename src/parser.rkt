@@ -68,6 +68,9 @@
    (whitespace (return-without-pos (small-c-lexer input-port)))
    ((eof)      (token-EOF))))
 
+(struct var-dcr (name ty pos))
+(struct fun-dcr (name ret-ty parms))
+
 (define small-c-parser
   (parser
    (start program)
@@ -92,26 +95,39 @@
     (declaration
      ((type-specifier declarator-list SEMI)
       (map (lambda (dcr)
-              (stx:var-decl (caar dcr) (format-decl-ty $1 (cdar dcr)) (cdr dcr)))
+              (let* ([name (var-dcr-name dcr)]
+                     [ty (var-dcr-ty dcr)]
+                     [pos (var-dcr-pos dcr)]
+                     [new-ty (format-ty $1 ty)])
+                (stx:var-decl name new-ty pos)))
            $2)))
     (declarator-list
      ((declarator) (list $1))
      ((declarator-list COMMA declarator) `(,@$1 ,$3)))
     (declarator
-     ((direct-declarator) (cons $1 $1-start-pos))
-     ((* direct-declarator) (cons (cons (car $2) `(pointer ,(cdr $2))) $1-start-pos)))
+     ((direct-declarator) (var-dcr (car $1) (cdr $1) $1-start-pos))
+     ((* direct-declarator) (var-dcr (car $2) `(pointer ,(cdr $2)) $1-start-pos)))
     (direct-declarator
      ((ID) (cons $1 '()))
      ((ID LBBRA NUM RBBRA) (cons $1 `(array ,$3))))
     (function-prototype
      ((type-specifier function-declarator SEMI)
-      (stx:fun-decl (car $2) (format-pt-ty $1 (cadr $2)) (map stx:parm-decl-ty (caddr $2)) $1-start-pos)))
+      (let* ([name (fun-dcr-name $2)]
+             [ret-ty (fun-dcr-ret-ty $2)]
+             [parms (fun-dcr-parms $2)]
+             [new-ret-ty (format-ty $1 ret-ty)]
+             [new-parms (map stx:parm-decl-ty parms)])
+        (stx:fun-decl name new-ret-ty new-parms $1-start-pos))))
     (function-declarator
-     ((ID LPAR parameter-type-list-opt RPAR) (list $1 '() $3))
-     ((* ID LPAR parameter-type-list-opt RPAR) (list $2 'pointer $4)))
+     ((ID LPAR parameter-type-list-opt RPAR) (fun-dcr $1 '() $3))
+     ((* ID LPAR parameter-type-list-opt RPAR) (fun-dcr $2  '(pointer ()) $4)))
     (function-definition
      ((type-specifier function-declarator compound-statement)
-      (stx:fun-def (car $2) (format-pt-ty $1 (cadr $2)) (caddr $2) $3 $1-start-pos)))
+      (let* ([name (fun-dcr-name $2)]
+             [ret-ty (fun-dcr-ret-ty $2)]
+             [parms (fun-dcr-parms $2)]
+             [new-ret-ty (format-ty $1 ret-ty)])
+      (stx:fun-def name new-ret-ty parms $3 $1-start-pos))))
     (parameter-type-list-opt
      (() '())
      ((parameter-type-list) $1))
@@ -120,10 +136,10 @@
      ((parameter-type-list COMMA parameter-declaration) `(,@$1 ,$3)))
     (parameter-declaration
      ((type-specifier parameter-declarator)
-      (stx:parm-decl (car $2) (format-pt-ty $1 (cdr $2)) $2-start-pos)))
+      (stx:parm-decl (car $2) (format-ty $1 (cdr $2)) $2-start-pos)))
     (parameter-declarator
      ((ID) (cons $1 '()))
-     ((* ID) (cons $2 'pointer)))
+     ((* ID) (cons $2 '(pointer ()))))
     (type-specifier
      ((INT) 'int)
      ((VOID) 'void))
@@ -138,7 +154,16 @@
      ;((FOR LPAR expression-opt SEMI expression-opt SEMI expression-opt RPAR statement)
      ; (stx:for-stmt $3 $5 $7 $9 $1-start-pos))
      ((FOR LPAR expression-opt SEMI expression-opt SEMI expression-opt RPAR statement)
-      `(,@$3 ,(stx:while-stmt $5 (stx:cmpd-stmt '() (list $9 $7) '()) $1-start-pos)))
+      (let* ([init $3]
+             [test $5]
+             [body (if (stx:cmpd-stmt? $9)
+                       (stx:cmpd-stmt
+                         (stx:cmpd-stmt-decls $9)
+                         (append (stx:cmpd-stmt-stmts $9) (list $7))
+                         (stx:cmpd-stmt-pos $9))
+                       (stx:cmpd-stmt '() (list $9 $7) $9-start-pos))]
+             [while-stmt (stx:while-stmt test body $1-start-pos)])
+        (stx:cmpd-stmt '() (list $3 while-stmt))))
      ((RETURN expression-opt SEMI) (stx:ret-stmt $2 $1-start-pos)))
     (compound-statement
      ((LBRA declaration-list-opt statement-list-opt RBRA) (stx:cmpd-stmt $2 $3 $1-start-pos)))
@@ -191,15 +216,13 @@
      ((postfix-expr) $1)
      ;((- unary-expr) (stx:neg-exp $2 $1-start-pos))
      ((- unary-expr) (stx:aop-exp '- (stx:lit-exp 0 '()) $2 $1-start-pos))
-     ((& unary-expr)
-      (if (stx:deref-exp? $2)
-          (stx:deref-exp-arg $2)
-          (stx:addr-exp $2 $1-start-pos)))
-     ((* unary-expr) (stx:deref-exp $2 $1-start-pos)))
+     ((& unary-expr) (omit-&* $2 $1-start-pos)))
     (postfix-expr
      ((primary-expr) $1)
      ;((postfix-expr LBBRA expression RBBRA) (stx:arr-exp $1 $3 $2-start-pos))
-     ((postfix-expr LBBRA expression RBBRA) (stx:deref-exp (list (stx:aop-exp '+ $1 (car $3) '())) $2-start-pos))
+     ((postfix-expr LBBRA expression RBBRA)
+      (let ([arg (stx:aop-exp '+ $1 (car $3) '())])
+        (stx:deref-exp arg $2-start-pos)))
      ((ID LPAR argument-expression-list-opt RPAR) (stx:fun-exp $1 $3 $1-start-pos)))
     (primary-expr
      ((ID) (stx:var-exp $1 $1-start-pos))
@@ -212,20 +235,20 @@
      ((assign-expr) (list $1))
      ((argument-expression-list COMMA assign-expr) `(,@$1 ,$3))))))
 
-(define (format-decl-ty ty1 ty2)
-  (cond [(null? ty2)
-         ty1]
-        [(eq? 'array (car ty2))
-         (list 'array ty1 (cadr ty2))]
-        [(eq? 'pointer (car ty2))
-         (list 'pointer (format-decl-ty ty1 (cadr ty2)))]))
+(define (format-ty main sub)
+  (cond [(null? sub)
+         main]
+        [(eq? 'array (car sub))
+         (list* 'array main (cdr sub))]
+        [(eq? 'pointer (car sub))
+         (list* 'pointer (format-ty main (cdr sub)))]))
 
-(define (format-pt-ty ty pt)
-  (if (null? pt)
-    ty
-    (list pt ty)))
+(define (omit-&* exp pos)
+  (cond [(list? exp) (omit-&* exp)]
+        [(stx:deref-exp? exp) (stx:deref-exp-arg exp)]
+        [else (stx:addr-exp exp pos)]))
 
-(define (add-print-fun ast)
+(define (add-print-fun-to-the-head ast)
   (append
     (list
       (stx:fun-decl
@@ -237,7 +260,7 @@
 
 (define (parse-port port)
   (port-count-lines! port)
-  (add-print-fun
+  (add-print-fun-to-the-head
     (small-c-parser (lambda () (small-c-lexer port)))))
 
 (define (parse-string str)
