@@ -11,6 +11,19 @@
   (define (check-stmt stmt) stmt)
   (define (check-exp exp)
     (match exp
+      [(stx:assign-exp left right pos)
+       (if (or (stx:deref-exp? left)
+                (and (stx:var-exp? left)
+                     (let* ([decl (stx:var-exp-tgt left)]
+                            [type (nr:decl-type decl)]
+                            [array? (if (eq? type 'int)
+                                      #f
+                                      (eq? (car type) 'array))])
+                        (not array?))))
+           exp
+           (error
+             'form-error
+             (err-msg pos "operator '=' has only a variable, a pointer or an array as left operand")))]
       [(stx:addr-exp var pos)
        (if (stx:var-exp? var)
            exp

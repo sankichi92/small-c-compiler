@@ -3,7 +3,7 @@
          (prefix-in stx: "syntax.rkt")
          "utils.rkt"
          "parser.rkt")
-(provide decl name-resolve name-resolve-str)
+(provide (all-defined-out))
 
 (struct decl (name lev kind type) #:transparent)
 
