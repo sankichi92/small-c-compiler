@@ -23,8 +23,8 @@
                [rest-ret (resolve-decl-list new-env lev (cdr decl-list))]
                [last-env (cdr rest-ret)])
           (cons (cons new-decl (car rest-ret)) last-env))))
-  (define (resolve-decl env lev dcl)
-    (match dcl
+  (define (resolve-decl env lev decl)
+    (match decl
       [(stx:var-decl name ty pos)
        (let ([obj (env name)])
          (if (and obj
