@@ -161,9 +161,9 @@
                          (stx:cmpd-stmt-decls $9)
                          (append (stx:cmpd-stmt-stmts $9) (list $7))
                          (stx:cmpd-stmt-pos $9))
-                       (stx:cmpd-stmt '() (list $9 $7) $9-start-pos))]
+                       (stx:cmpd-stmt '() (list $9 $7) '()))]
              [while-stmt (stx:while-stmt test body $1-start-pos)])
-        (stx:cmpd-stmt '() (list $3 while-stmt))))
+        (stx:cmpd-stmt '() (list $3 while-stmt) '())))
      ((RETURN expression-opt SEMI) (stx:ret-stmt $2 $1-start-pos)))
     (compound-statement
      ((LBRA declaration-list-opt statement-list-opt RBRA) (stx:cmpd-stmt $2 $3 $1-start-pos)))
@@ -216,12 +216,15 @@
      ((postfix-expr) $1)
      ;((- unary-expr) (stx:neg-exp $2 $1-start-pos))
      ((- unary-expr) (stx:aop-exp '- (stx:lit-exp 0 '()) $2 $1-start-pos))
-     ((& unary-expr) (omit-&* $2 $1-start-pos)))
+     ((& unary-expr) (if (stx:deref-exp? $2)
+                         (stx:deref-exp-arg $2)
+                         (stx:addr-exp $2 $1-start-pos)))
+     ((* unary-expr) (stx:deref-exp $2 $1-start-pos)))
     (postfix-expr
      ((primary-expr) $1)
      ;((postfix-expr LBBRA expression RBBRA) (stx:arr-exp $1 $3 $2-start-pos))
      ((postfix-expr LBBRA expression RBBRA)
-      (let ([arg (stx:aop-exp '+ $1 (car $3) '())])
+      (let ([arg (list (stx:aop-exp '+ $1 (car $3) '()))])
         (stx:deref-exp arg $2-start-pos)))
      ((ID LPAR argument-expression-list-opt RPAR) (stx:fun-exp $1 $3 $1-start-pos)))
     (primary-expr
@@ -242,11 +245,6 @@
          (list* 'array main (cdr sub))]
         [(eq? 'pointer (car sub))
          (list* 'pointer (format-ty main (cdr sub)))]))
-
-(define (omit-&* exp pos)
-  (cond [(list? exp) (omit-&* exp)]
-        [(stx:deref-exp? exp) (stx:deref-exp-arg exp)]
-        [else (stx:addr-exp exp pos)]))
 
 (define (add-print-fun-to-the-head ast)
   (append
