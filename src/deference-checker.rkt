@@ -22,16 +22,14 @@
                                       (eq? (car type) 'array))])
                         (not array?))))
            exp
-           (dc-err pos "="))]
+           (dc-err pos "expression is not assignable"))]
       [(stx:addr-exp var pos)
        (if (stx:var-exp? var)
            exp
-           (dc-err pos "&"))]
+           (dc-err pos "cannot take the address"))]
       [else exp]))
-  (define (dc-err pos op)
-    (error
-      'deference-check-error
-      (err-msg pos (format "operator '~a' has only a variable, a pointer or an array as operand" op))))
+  (define (dc-err pos msg)
+    (error 'deference-check-error (err-msg pos msg)))
   (traverse check-decl check-stmt check-exp ast))
 
 (define (deference-check-str str)

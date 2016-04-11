@@ -41,7 +41,7 @@
                                (eprintf
                                  (err-msg
                                    pos
-                                   (format "warning: overwriting of parm ~a" name)))])
+                                   (format "warning: overwriting a function parameter" name)))])
                         #f))))
              (redef-err pos name)
              (let* ([new-obj (ett:decl name lev 'var ty)]
@@ -152,26 +152,28 @@
       [(stx:fun-exp name args pos)
        (let ([obj (env name)])
          (if obj
-             (let ([kind (ett:decl-kind obj)])
+             (let ([kind (ett:decl-kind obj)]
+                   [type (ett:decl-type obj)])
                (if (or (eq? kind 'var) (eq? kind 'parm))
-                   (nr-err pos (format "~a is not a function" name))
+                   (nr-err pos (format "called object type '~a' is not a function or function pointer" type))
                    (stx:fun-exp obj args pos)))
              (unknown-err pos name)))]
       [(stx:var-exp tgt pos)
        (let ([obj (env tgt)])
          (if obj
-             (let ([kind (ett:decl-kind obj)])
+             (let ([kind (ett:decl-kind obj)]
+                   [type (ett:decl-type obj)])
                (if (or (eq? kind 'fun) (eq? kind 'proto))
-                   (nr-err pos (format "~a is not a variable" tgt))
+                   (nr-err pos (format "called object type '~a' is not a variable or pointer" type))
                    (stx:var-exp obj pos)))
              (unknown-err pos tgt)))]
       [else exp]))
   (define (nr-err pos msg)
     (error 'name-resolve-error (err-msg pos msg)))
   (define (redef-err pos name)
-    (nr-err pos (format "redifinition of ~a" name)))
+    (nr-err pos (format "redifinition of '~a'" name)))
   (define (unknown-err pos name)
-    (nr-err pos (format "unknown identifier ~a" name)))
+    (nr-err pos (format "unknown identifier '~a'" name)))
   (car (resolve-decl-list initial-env 0 ast)))
 
 (define (name-resolve-str str)
