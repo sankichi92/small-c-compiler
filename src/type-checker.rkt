@@ -14,10 +14,9 @@
   (define (type-check-decl decl)
     (match decl
       [(stx:var-decl obj ty pos) (check-type-obj obj pos)]
-      [(stx:parm-decl obj ty pos) decl]
-      [(stx:fun-decl obj ret-ty parm-tys pos) decl]
-      [(stx:fun-def obj ret-ty parms body pos) decl]
-      [else decl]))
+      [(stx:parm-decl obj ty pos) (check-type-obj obj pos)]
+      [(stx:fun-decl obj ret-ty parm-tys pos) (check-type-obj obj pos)]
+      [(stx:fun-def obj ret-ty parms body pos) (check-type-obj obj pos)]))
   (define (type-check-stmt stmt)
     (match stmt
       [(stx:if-els-stmt test tbody ebody pos) stmt]
@@ -38,16 +37,26 @@
       [(stx:lit-exp val pos) exp]
       [else exp]))
   (define (check-type-obj obj pos)
-    (let ([type (ett:decl-type obj)])
-      (match type
-        [`(array void ,_) (tc-err pos "array has incomplete element type 'void'")]
-        [else 'well-typed])))
+    (let* ([type (ett:decl-type obj)])
+      (if (match type
+            ['void (tc-err pos "variable has incomplete type 'void'")]
+            [(list 'array 'void _) (tc-err pos "array has incomplete element type 'void'")]
+            [(list 'pointer 'void) (tc-err pos "pointer has incomplete type 'void'")]
+            [(list 'array (list 'pointer 'void) _) (tc-err pos "array has incomplete element type '*void'")]
+            [(list 'fun (cons ret-ty args)) (andmap (lambda (a)
+                                                      (check-type-obj a pos))
+                                                    args)]
+            [(list 'array t _) (check-type-obj t)]
+            [(list 'pointer t) (check-type-obj t)]
+            [else #t])
+          'well-typed
+          (tc-err pos "object is not well-typed"))))
   (define (tc-err pos msg)
     (error 'type-check-error (err-msg pos msg)))
-  (if (andmap well-typed?
-              (traverse type-check-decl type-check-stmt type-check-exp ast))
-      'well-typed
-      #f))
+  (let ([new-ast (traverse type-check-decl type-check-stmt type-check-exp ast)])
+    (if (andmap well-typed? new-ast)
+        'well-typed
+        (tc-err (position 1 1 0) "program is not well-typed"))))
 
 (define (type-check-str str)
   (type-check (deference-check-str str)))
