@@ -106,10 +106,10 @@
      ((declarator-list COMMA declarator) `(,@$1 ,$3)))
     (declarator
      ((direct-declarator) (var-dcr (car $1) (cdr $1) $1-start-pos))
-     ((* direct-declarator) (var-dcr (car $2) `(pointer ,(cdr $2)) $1-start-pos)))
+     ((* direct-declarator) (var-dcr (car $2) (cons 'pointer (cdr $2)) $1-start-pos)))
     (direct-declarator
      ((ID) (cons $1 '()))
-     ((ID LBBRA NUM RBBRA) (cons $1 `(array ,$3))))
+     ((ID LBBRA NUM RBBRA) (cons $1 (cons 'array $3))))
     (function-prototype
      ((type-specifier function-declarator SEMI)
       (let* ([name (fun-dcr-name $2)]
@@ -120,7 +120,7 @@
         (stx:fun-decl name new-ret-ty new-parms $1-start-pos))))
     (function-declarator
      ((ID LPAR parameter-type-list-opt RPAR) (fun-dcr $1 '() $3))
-     ((* ID LPAR parameter-type-list-opt RPAR) (fun-dcr $2  '(pointer ()) $4)))
+     ((* ID LPAR parameter-type-list-opt RPAR) (fun-dcr $2  (cons 'pointer '()) $4)))
     (function-definition
      ((type-specifier function-declarator compound-statement)
       (let* ([name (fun-dcr-name $2)]
@@ -242,9 +242,9 @@
   (cond [(null? sub)
          main]
         [(eq? 'array (car sub))
-         (list* 'array main (cdr sub))]
+         (list 'array main (cdr sub))]
         [(eq? 'pointer (car sub))
-         (list* 'pointer (format-ty main (cdr sub)))]))
+         (list 'pointer (format-ty main (cdr sub)))]))
 
 (define (add-print-fun-to-the-head ast)
   (append
