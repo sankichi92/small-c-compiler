@@ -17,6 +17,12 @@
         (list 'well-typed 'well-typed))
       "program")
 
+    (check-exn
+      exn:fail?
+      (lambda ()
+        (type-check-str "void a[0];"))
+      "array has incomplete element type 'void'")
+
   ))
 
 (run-tests type-checker-tests)
