@@ -16,7 +16,7 @@
     (let ([new-stmt
            (match stmt
              ['() '()]
-             [(cons _ _) (map traverse-exp stmt)]
+             [(cons _ _) (traverse-exp stmt)]
              [(stx:cmpd-stmt decls stmts pos)
               (let ([new-decls (map traverse-decl decls)]
                     [new-stmts (map traverse-stmt stmts)])
