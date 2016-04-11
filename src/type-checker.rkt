@@ -16,14 +16,42 @@
       [(stx:var-decl obj ty pos) (check-type-obj obj pos)]
       [(stx:parm-decl obj ty pos) (check-type-obj obj pos)]
       [(stx:fun-decl obj ret-ty parm-tys pos) (check-type-obj obj pos)]
-      [(stx:fun-def obj ret-ty parms body pos) (check-type-obj obj pos)]))
-  (define (type-check-stmt stmt)
+      [(stx:fun-def obj ret-ty parms body pos)
+       (if (and (well-typed? (check-type-obj obj pos))
+                (well-typed? (type-check-stmt body ret-ty))
+           'well-typed
+           (tc-err pos "fun-def is not well-typed"))]))
+  (define (type-check-stmt stmt . ret-ty)
     (match stmt
-      [(stx:if-els-stmt test tbody ebody pos) stmt]
-      [(stx:while-stmt test body pos) stmt]
-      [(stx:ret-stmt exp pos) stmt]
-      [(stx:cmpd-stmt decls stmts pos) stmt]
-      [else stmt]))
+      ['() 'well-typed]
+      [id 'well-typed]
+      [(stx:if-els-stmt test tbody ebody pos)
+       (if (and (int? test)
+                (well-typed? tbody)
+                (well-typed? ebody))
+           'well-typed
+           (tc-err pos "if-els-stmt is not well-typed"))]
+      [(stx:while-stmt test body pos)
+       (if (and (int? test)
+                (well-typed? body))
+           'well-typed
+           (tc-err pos "while-stmt is not well-typed"))]
+      [(stx:ret-stmt exp pos)
+       (if (null? ret-ty)
+           stmt
+           (if (eq? ret-ty 'void)
+               (if (null? exp)
+                   'well-typed
+                   (tc-err pos "void function should not return a value"))
+               (if (eq? exp ret-ty)
+                   'well-typed
+                   (tc-err pos "non-void function should return a value"))))]
+      [(stx:cmpd-stmt decls stmts pos)
+       (if (and (andmap well-typed? decls)
+                (andmap well-typed? stmts))
+           'well-typed
+           (tc-err pos "cmpd-stmt is not well-typed"))]
+      ['well-typed 'well-typed]))
   (define (type-check-exp exp)
     (match exp
       [(stx:assign-exp left right pos) exp]
@@ -51,6 +79,8 @@
             [else #t])
           'well-typed
           (tc-err pos "object is not well-typed"))))
+  (define (int? exp)
+    (eq? exp 'int))
   (define (tc-err pos msg)
     (error 'type-check-error (err-msg pos msg)))
   (let ([new-ast (traverse type-check-decl type-check-stmt type-check-exp ast)])
