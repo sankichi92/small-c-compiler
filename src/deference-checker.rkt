@@ -22,13 +22,13 @@
                                       (eq? (car type) 'array))])
                         (not array?))))
            exp
-           (form-err pos "="))]
+           (dc-err pos "="))]
       [(stx:addr-exp var pos)
        (if (stx:var-exp? var)
            exp
-           (form-err pos "&"))]
+           (dc-err pos "&"))]
       [else exp]))
-  (define (form-err pos op)
+  (define (dc-err pos op)
     (error
       'deference-check-error
       (err-msg pos (format "operator '~a' has only a variable, a pointer or an array as operand" op))))
