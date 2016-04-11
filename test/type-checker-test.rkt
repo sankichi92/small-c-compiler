@@ -9,6 +9,14 @@
 
 (define type-checker-tests
   (test-suite
-    "Tests for type-checker.rkt"))
+    "Tests for type-checker.rkt"
+
+    (check-pred
+      well-typed?
+      (type-check
+        (list 'well-typed 'well-typed))
+      "program")
+
+  ))
 
 (run-tests type-checker-tests)
