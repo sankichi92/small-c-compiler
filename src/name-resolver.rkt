@@ -37,9 +37,9 @@
                       (and (eq? kind 'var)
                            (= obj-lev lev))
                       (begin
-                        (cond [(eq? kind 'parm)
-                               (eprintf
-                                 (err-msg pos "warning: overwriting an argument"))])
+                        (when (eq? kind 'parm)
+                              (eprintf
+                                (err-msg pos "warning: overwriting an argument")))
                         #f))))
              (redef-err pos name)
              (let* ([new-obj (ett:decl name lev 'var ty)]
