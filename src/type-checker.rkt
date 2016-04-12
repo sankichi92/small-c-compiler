@@ -20,9 +20,10 @@
        (if (and (well-typed? (check-type-obj obj pos))
                 (well-typed? (type-check-stmt body ret-ty)))
            'well-typed
-           (tc-err pos "fun-def is not well-typed"))]))
+           decl)]))
   (define (type-check-stmt stmt . ret-ty)
     (match stmt
+      ['well-typed 'well-typed]
       ['() 'well-typed]
       [id 'well-typed]
       [(stx:if-els-stmt test tbody ebody pos)
@@ -30,12 +31,11 @@
                 (well-typed? tbody)
                 (well-typed? ebody))
            'well-typed
-           (tc-err pos "if-els-stmt is not well-typed"))]
+           stmt)]
       [(stx:while-stmt test body pos)
        (if (and (int? test)
                 (well-typed? body))
            'well-typed
-           (tc-err pos "while-stmt is not well-typed"))]
       [(stx:ret-stmt exp pos)
        (cond [(null? ret-ty) stmt]
              [(and (eq? ret-ty 'void)
@@ -44,12 +44,12 @@
              [(not (eq? ret-ty exp))
               (tc-err pos "non-void function should return a value")]
              [else 'well-typed])]
+           stmt)]
       [(stx:cmpd-stmt decls stmts pos)
        (if (and (andmap well-typed? decls)
                 (andmap well-typed? stmts))
            'well-typed
-           (tc-err pos "cmpd-stmt is not well-typed"))]
-      ['well-typed 'well-typed]))
+           stmt)]
   (define (type-check-exp exp)
     (match exp
       ['() 'well-typed]
@@ -145,10 +145,10 @@
     (eq? exp 'int**))
   (define (tc-err pos msg)
     (error 'type-check-error (err-msg pos msg)))
-  (let ([new-ast (traverse type-check-decl type-check-stmt type-check-exp ast)])
-    (if (andmap well-typed? new-ast)
+  (let ([decls (traverse type-check-decl type-check-stmt type-check-exp ast)])
+    (if (andmap well-typed? decls)
         'well-typed
-        (tc-err (position 1 1 0) "program is not well-typed"))))
+        decls)))
 
 (define (type-check-str str)
   (type-check (deference-check-str str)))
