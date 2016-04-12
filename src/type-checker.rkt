@@ -18,7 +18,7 @@
       [(stx:fun-decl obj ret-ty parm-tys pos) (check-type-obj obj pos)]
       [(stx:fun-def obj ret-ty parms body pos)
        (if (and (well-typed? (check-type-obj obj pos))
-                (well-typed? (type-check-stmt body ret-ty))
+                (well-typed? (type-check-stmt body ret-ty)))
            'well-typed
            (tc-err pos "fun-def is not well-typed"))]))
   (define (type-check-stmt stmt . ret-ty)
