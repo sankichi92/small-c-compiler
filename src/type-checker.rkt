@@ -27,13 +27,13 @@
       ['() 'well-typed]
       [(stx:if-els-stmt test tbody ebody pos)
        (if (and (int? test)
-                (well-typed? tbody)
-                (well-typed? ebody))
+                (well-typed? (type-check-stmt tbody ret-ty))
+                (well-typed? (type-check-stmt ebody ret-ty)))
            'well-typed
            stmt)]
       [(stx:while-stmt test body pos)
        (if (and (int? test)
-                (well-typed? body))
+                (well-typed? (type-check-stmt body ret-ty)))
            'well-typed
       [(stx:ret-stmt exp pos)
        (cond [(null? ret-ty) stmt]
@@ -46,7 +46,10 @@
            stmt)]
       [(stx:cmpd-stmt decls stmts pos)
        (if (and (andmap well-typed? decls)
-                (andmap well-typed? stmts))
+                (andmap well-typed?
+                        (map (lambda (stmt)
+                               (type-check-stmt stmt ret-ty))
+                             stmts)))
            'well-typed
            stmt)]
       [exp (if (symbol? exp)
