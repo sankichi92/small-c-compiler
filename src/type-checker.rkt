@@ -21,14 +21,14 @@
                 (well-typed? (type-check-stmt body ret-ty)))
            'well-typed
            decl)]))
-  (define (type-check-stmt stmt . ret-ty)
+  (define (type-check-stmt stmt [ret-ty '()])
     (match stmt
       ['well-typed 'well-typed]
       ['() 'well-typed]
       [(stx:ret-stmt exp pos)
-       (if (null? (flatten ret-ty))
+       (if (null? ret-ty)
            stmt
-           (let ([ret-sym (type->symbol (car (flatten ret-ty)))])
+           (let ([ret-sym (type->symbol ret-ty)])
              (cond [(and (eq? ret-sym 'void)
                          (not (null? exp)))
                     (tc-err pos "void function should not return a value")]

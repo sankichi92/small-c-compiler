@@ -60,7 +60,13 @@
       exn:fail?
       (lambda ()
         (type-check-str "void *f(){}"))
-      "")
+      "pointer has incomplete type 'void'")
+
+    (check-exn
+      exn:fail?
+      (lambda ()
+        (type-check-str "void f(){int *a;a=0;}"))
+      "incompatible assigning to 'int*' from 'int'")
 
     (check-pred
       well-typed?
