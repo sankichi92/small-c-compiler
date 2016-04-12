@@ -25,6 +25,18 @@
     (match stmt
       ['well-typed 'well-typed]
       ['() 'well-typed]
+      [(stx:ret-stmt exp pos)
+       (if (null? (flatten ret-ty))
+           stmt
+           (let ([ret-sym (type->symbol (car (flatten ret-ty)))])
+             (cond [(and (eq? ret-sym 'void)
+                         (not (null? exp)))
+                    (tc-err pos "void function should not return a value")]
+                   [(not (eq? ret-sym exp))
+                    (tc-err
+                      pos
+                      (format "incompatible returning '~a' from a function with result type '~a'" exp ret-sym))]
+                   [else 'well-typed])))]
       [(stx:if-els-stmt test tbody ebody pos)
        (if (and (int? test)
                 (well-typed? (type-check-stmt tbody ret-ty))
@@ -35,14 +47,6 @@
        (if (and (int? test)
                 (well-typed? (type-check-stmt body ret-ty)))
            'well-typed
-      [(stx:ret-stmt exp pos)
-       (cond [(null? ret-ty) stmt]
-             [(and (eq? ret-ty 'void)
-                   (not (null? exp)))
-              (tc-err pos "void function should not return a value")]
-             [(not (eq? ret-ty exp))
-              (tc-err pos "non-void function should return a value")]
-             [else 'well-typed])]
            stmt)]
       [(stx:cmpd-stmt decls stmts pos)
        (if (and (andmap well-typed? decls)
