@@ -54,16 +54,60 @@
       ['well-typed 'well-typed]))
   (define (type-check-exp exp)
     (match exp
-      [(stx:assign-exp left right pos) exp]
-      [(stx:lop-exp op left right pos) exp]
-      [(stx:rop-exp op left right pos) exp]
-      [(stx:aop-exp op left right pos) exp]
-      [(stx:addr-exp var pos) exp]
-      [(stx:deref-exp arg pos) exp]
-      [(stx:fun-exp obj args pos) exp]
-      [(stx:var-exp obj pos) exp]
-      [(stx:lit-exp val pos) exp]
-      [else exp]))
+      ['() 'well-typed]
+      [(cons _ _)
+       (if (andmap symbol? exp)
+           (list-tail exp 1)
+           (tc-err '() "exp-list is not well-typed"))]
+      [(stx:assign-exp left right pos)
+       (if (eq? left right)
+           left
+           (tc-err pos (format "incompatible assigning to '~a' from '~a'" left right)))]
+      [(stx:lop-exp op left right pos)
+       (if (and (int? left)
+                (int? right))
+           'int
+           (tc-err pos (format "invalid operands ('~a' and '~a')" left right)))]
+      [(stx:rop-exp op left right pos)
+       (if (eq? left right)
+           'int
+           (tc-err pos (format "comparison between '~a' and '~a'" left right)))]
+      [(stx:aop-exp op left right pos)
+       (cond [(and (int? left)
+                   (int? right))
+              'int]
+             [(match op
+                ['+ (cond [(or (and (int*? left) (int? right))
+                               (and (int? left) (int*? right)))
+                           'int*]
+                          [(or (and (int**? left) (int? right))
+                               (and (int? left) (int**? right)))
+                           'int**])]
+                ['- (cond [(and (int*? left) (int? right))
+                           'int*]
+                          [(and (int**? left) (int? right))
+                           'int**])])]
+             [else (tc-err pos (format "invalid operands ('~a' and '~a')" left right))])]
+      [(stx:addr-exp var pos)
+       (if (int? var)
+           'int*
+           (tc-err pos (format "dereference requires int operand ('~a' invalid)" var)))]
+      [(stx:deref-exp arg pos)
+       (cond [(int*? arg) 'int]
+             [(int**? arg) 'int*]
+             [else (tc-err pos "indirection requires pointer operand ('~a' invalid)" arg)])]
+      [(stx:fun-exp obj args pos)
+       (let* ([type (ett:decl-type obj)]
+              [ret-ty (cadr type)]
+              [arg-tys (cddr type)]
+              [arg-syms (map type->symbol arg-tys)])
+         (if (and (andmap symbol? args)
+                  (equal? arg-syms args))
+             ret-ty
+             (tc-err pos (format "invalid arguments to function call, expected '~a', have '~a'" arg-syms args))))]
+      [(stx:var-exp obj pos)
+       (type->symbol (ett:decl-type obj))]
+      [(stx:lit-exp val pos) 'int]))
   (define (check-type-obj obj pos)
     (let* ([type (ett:decl-type obj)])
       (if (match type
@@ -79,8 +123,21 @@
             [else #t])
           'well-typed
           (tc-err pos "object is not well-typed"))))
+  (define (type->symbol type)
+    (define (type->string type)
+      (match type
+        ['int "int"]
+        [(list 'pointer ty)
+         (string-join (type->string ty) "*")]
+        [(list 'array ty _)
+         (string-join (type->string ty) "*")]))
+    (string->symbol (type->string type)))
   (define (int? exp)
     (eq? exp 'int))
+  (define (int*? exp)
+    (eq? exp 'int*))
+  (define (int**? exp)
+    (eq? exp 'int**))
   (define (tc-err pos msg)
     (error 'type-check-error (err-msg pos msg)))
   (let ([new-ast (traverse type-check-decl type-check-stmt type-check-exp ast)])
