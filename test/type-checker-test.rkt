@@ -37,17 +37,17 @@
 
     (check-pred
       well-typed?
-      (type-check-str "int a;")
+      (car (type-check-str "int a;"))
       "'int a;' is well-typed")
 
     (check-pred
       well-typed?
-      (type-check-str "int main(){;}")
+      (car (type-check-str "int main(){;}"))
       "well-typed")
 
     (check-pred
       well-typed?
-      (type-check-str "void f(){0,1;}")
+      (car (type-check-str "void f(){0,1;}"))
       "well-typed")
 
     (check-exn
@@ -70,7 +70,7 @@
 
     (check-pred
       well-typed?
-      (type-check-str "int a[1];int g(int a){a=0;return a==1;}int *f(){int b;a[0]=1;b=a[0]+1;return &b;}")
+      (car (type-check-str "int a[1];int g(int a){a=0;return a==1;}int *f(){int b;a[0]=1;b=a[0]+1;return &b;}"))
       "well-typed")
 
   ))

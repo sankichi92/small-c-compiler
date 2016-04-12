@@ -156,7 +156,7 @@
     (error 'type-check-error (err-msg pos msg)))
   (let ([decls (traverse type-check-decl type-check-stmt type-check-exp ast)])
     (if (andmap well-typed? decls)
-        'well-typed
+        (cons 'well-typed ast)
         decls)))
 
 (define (type-check-str str)
