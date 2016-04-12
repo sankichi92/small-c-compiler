@@ -16,22 +16,22 @@
     (let ([new-stmt
            (match stmt
              ['() '()]
-             [(cons _ _) (map traverse-exp stmt)]
+             [(cons _ _) (traverse-exp stmt)]
              [(stx:cmpd-stmt decls stmts pos)
               (let ([new-decls (map traverse-decl decls)]
                     [new-stmts (map traverse-stmt stmts)])
                 (stx:cmpd-stmt new-decls new-stmts pos))]
              [(stx:if-els-stmt test tbody ebody pos)
-              (let ([new-test (map traverse-exp test)]
-                    [new-tbody (map traverse-stmt tbody)]
-                    [new-ebody (map traverse-stmt ebody)])
+              (let ([new-test (traverse-exp test)]
+                    [new-tbody (traverse-stmt tbody)]
+                    [new-ebody (traverse-stmt ebody)])
                 (stx:if-els-stmt new-test new-tbody new-ebody pos))]
              [(stx:while-stmt test body pos)
-              (let ([new-test (map traverse-exp test)]
-                    [new-body (map traverse-stmt body)])
+              (let ([new-test (traverse-exp test)]
+                    [new-body (traverse-stmt body)])
                 (stx:while-stmt new-test new-body pos))]
              [(stx:ret-stmt exp pos)
-              (let ([new-exp (map traverse-exp exp)])
+              (let ([new-exp (traverse-exp exp)])
                 (stx:ret-stmt new-exp pos))])])
       (stmt-proc new-stmt)))
   (define (traverse-exp exp)
