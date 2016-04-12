@@ -118,25 +118,23 @@
   (define (check-type-obj obj pos)
     (define (check-type-obj-ty type pos)
       (match type
-        ['void
-         (tc-err pos "variable has incomplete type 'void'")]
         [(list 'array 'void _)
          (tc-err pos "array has incomplete element type 'void'")]
         [(list 'pointer 'void)
          (tc-err pos "pointer has incomplete type 'void'")]
         [(list 'array (list 'pointer 'void) _)
          (tc-err pos "array has incomplete element type 'void *'")]
-        [(list 'fun (cons ret-ty args))
-         (andmap (lambda (a)
-                   (check-type-obj-ty a pos))
+        [(cons 'fun args)
+         (andmap (lambda (arg)
+                   (check-type-obj-ty arg pos))
                  args)]
-        [(list 'array t _) (check-type-obj-ty t pos)]
-        [(list 'pointer t) (check-type-obj-ty t pos)]
         [else #t]))
     (let* ([type (ett:decl-type obj)])
-      (if (check-type-obj-ty type pos)
-          'well-typed
-          (tc-err pos "invalid type"))))
+      (if (eq? type 'void)
+          (tc-err pos "variable has incomplete type 'void'")
+          (if (check-type-obj-ty type pos)
+              'well-typed
+              obj))))
   (define (type->symbol type)
     (define (type->string type)
       (match type
