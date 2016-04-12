@@ -1,8 +1,5 @@
 #lang racket/base
 (require rackunit
-         parser-tools/lex
-         "../src/syntax.rkt"
-         "../src/entity.rkt"
          "../src/type-checker.rkt")
 (require rackunit/text-ui)
 (provide type-checker-tests)
