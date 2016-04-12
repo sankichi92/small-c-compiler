@@ -25,7 +25,6 @@
     (match stmt
       ['well-typed 'well-typed]
       ['() 'well-typed]
-      [id 'well-typed]
       [(stx:if-els-stmt test tbody ebody pos)
        (if (and (int? test)
                 (well-typed? tbody)
@@ -50,6 +49,9 @@
                 (andmap well-typed? stmts))
            'well-typed
            stmt)]
+      [exp (if (symbol? exp)
+               'well-typed
+               exp)]))
   (define (type-check-exp exp)
     (match exp
       ['() 'well-typed]
