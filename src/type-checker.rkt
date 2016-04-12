@@ -131,12 +131,13 @@
   (define (type->symbol type)
     (define (type->string type)
       (match type
-        ['int "int"]
         [(list 'pointer ty)
-         (string-join (type->string ty) "*")]
+         (string-append (type->string ty) "*")]
         [(list 'array ty _)
-         (string-join (type->string ty) "*")]))
-    (string->symbol (type->string type)))
+         (string-append (type->string ty) "*")]))
+    (if (symbol? type)
+        type
+        (string->symbol (type->string type))))
   (define (int? exp)
     (eq? exp 'int))
   (define (int*? exp)
