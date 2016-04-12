@@ -57,7 +57,7 @@
                exp)]))
   (define (type-check-exp exp)
     (match exp
-      ['() 'well-typed]
+      ['() '()]
       [(cons _ _)
        (if (andmap symbol? exp)
            (list-ref exp (sub1 (length exp)))
