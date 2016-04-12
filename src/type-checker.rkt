@@ -138,6 +138,7 @@
   (define (type->symbol type)
     (define (type->string type)
       (match type
+        ['int "int"]
         [(list 'pointer ty)
          (string-append (type->string ty) "*")]
         [(list 'array ty _)

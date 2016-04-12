@@ -52,15 +52,20 @@
 
     (check-exn
       exn:fail?
-      ;(lambda ()
-        (type-check-str "int main(){int a;return &a;}");)
-      "")
+      (lambda ()
+        (type-check-str "int main(){int a;return &a;}"))
+      "incompatible returning 'int*' from a function with result type 'int'")
 
     (check-exn
       exn:fail?
       (lambda ()
         (type-check-str "void *f(){}"))
       "")
+
+    (check-pred
+      well-typed?
+      (type-check-str "int a[1];int g(int a){a=0;return a==1;}int *f(){int b;a[0]=1;b=a[0]+1;return &b;}")
+      "well-typed")
 
   ))
 
