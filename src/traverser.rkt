@@ -80,6 +80,8 @@
       [else decl]))
   (define (foo-stmt stmt)
     (match stmt
+      ['() stmt]
+      [(cons _ _) stmt]
       [(stx:if-els-stmt test tbody ebody pos) stmt]
       [(stx:while-stmt test body pos) stmt]
       [(stx:ret-stmt exp pos) stmt]
@@ -87,6 +89,8 @@
       [else stmt]))
   (define (foo-exp exp)
     (match exp
+      ['() exp]
+      [(cons _ _) exp]
       [(stx:assign-exp left right pos) exp]
       [(stx:lop-exp op left right pos) exp]
       [(stx:rop-exp op left right pos) exp]

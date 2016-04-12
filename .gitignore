@@ -28,7 +28,9 @@ Temporary Items
 *~
 \#*\#
 
+*.tbl
+
 tmp.c
 a.out
 src/compiled
-*.tbl
+src/scc

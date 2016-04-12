@@ -37,9 +37,9 @@
                       (and (eq? kind 'var)
                            (= obj-lev lev))
                       (begin
-                        (cond [(eq? kind 'parm)
-                               (eprintf
-                                 (err-msg pos "warning: overwriting an argument"))])
+                        (when (eq? kind 'parm)
+                              (eprintf
+                                (err-msg pos "warning: overwriting an argument")))
                         #f))))
              (redef-err pos name)
              (let* ([new-obj (ett:decl name lev 'var ty)]
@@ -75,7 +75,7 @@
                     [type (list* 'fun ret-ty parm-tys)]
                     [new-obj (ett:decl name 0 'fun type)]
                     [new-env (register env new-obj)]
-                    [new-lev (+ lev 1)]
+                    [new-lev (add1 lev)]
                     [ret (resolve-decl-list new-env new-lev parms)]
                     [new-parms (car ret)]
                     [parms-env (cdr ret)]
@@ -99,7 +99,7 @@
       ['() stmt]
       [(cons _ _) (resolve-exp-list env lev stmt)]
       [(stx:cmpd-stmt decls stmts pos)
-       (let* ([new-lev (+ lev 1)]
+       (let* ([new-lev (add1 lev)]
               [ret (resolve-decl-list env new-lev decls)]
               [new-decls (car ret)]
               [new-env (cdr ret)]

@@ -246,7 +246,7 @@
         [(eq? 'pointer (car sub))
          (list 'pointer (format-ty main (cdr sub)))]))
 
-(define (add-print-fun-to-the-head ast)
+(define (append-print-fun decl-list)
   (append
     (list
       (stx:fun-decl
@@ -254,11 +254,11 @@
         'void
         (list 'int)
         '()))
-    ast))
+    decl-list))
 
 (define (parse-port port)
   (port-count-lines! port)
-  (add-print-fun-to-the-head
+  (append-print-fun
     (small-c-parser (lambda () (small-c-lexer port)))))
 
 (define (parse-string str)
