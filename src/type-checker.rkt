@@ -37,15 +37,13 @@
            'well-typed
            (tc-err pos "while-stmt is not well-typed"))]
       [(stx:ret-stmt exp pos)
-       (if (null? ret-ty)
-           stmt
-           (if (eq? ret-ty 'void)
-               (if (null? exp)
-                   'well-typed
-                   (tc-err pos "void function should not return a value"))
-               (if (eq? exp ret-ty)
-                   'well-typed
-                   (tc-err pos "non-void function should return a value"))))]
+       (cond [(null? ret-ty) stmt]
+             [(and (eq? ret-ty 'void)
+                   (not (null? exp)))
+              (tc-err pos "void function should not return a value")]
+             [(not (eq? ret-ty exp))
+              (tc-err pos "non-void function should return a value")]
+             [else 'well-typed])]
       [(stx:cmpd-stmt decls stmts pos)
        (if (and (andmap well-typed? decls)
                 (andmap well-typed? stmts))
@@ -109,20 +107,27 @@
        (type->symbol (ett:decl-type obj))]
       [(stx:lit-exp val pos) 'int]))
   (define (check-type-obj obj pos)
+    (define (check-type-obj-ty type pos)
+      (match type
+        ['void
+         (tc-err pos "variable has incomplete type 'void'")]
+        [(list 'array 'void _)
+         (tc-err pos "array has incomplete element type 'void'")]
+        [(list 'pointer 'void)
+         (tc-err pos "pointer has incomplete type 'void'")]
+        [(list 'array (list 'pointer 'void) _)
+         (tc-err pos "array has incomplete element type 'void *'")]
+        [(list 'fun (cons ret-ty args))
+         (andmap (lambda (a)
+                   (check-type-obj-ty a pos))
+                 args)]
+        [(list 'array t _) (check-type-obj-ty t pos)]
+        [(list 'pointer t) (check-type-obj-ty t pos)]
+        [else #t]))
     (let* ([type (ett:decl-type obj)])
-      (if (match type
-            ['void (tc-err pos "variable has incomplete type 'void'")]
-            [(list 'array 'void _) (tc-err pos "array has incomplete element type 'void'")]
-            [(list 'pointer 'void) (tc-err pos "pointer has incomplete type 'void'")]
-            [(list 'array (list 'pointer 'void) _) (tc-err pos "array has incomplete element type '*void'")]
-            [(list 'fun (cons ret-ty args)) (andmap (lambda (a)
-                                                      (check-type-obj a pos))
-                                                    args)]
-            [(list 'array t _) (check-type-obj t)]
-            [(list 'pointer t) (check-type-obj t)]
-            [else #t])
+      (if (check-type-obj-ty type pos)
           'well-typed
-          (tc-err pos "object is not well-typed"))))
+          (tc-err pos "invalid type"))))
   (define (type->symbol type)
     (define (type->string type)
       (match type
