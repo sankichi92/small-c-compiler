@@ -29,7 +29,7 @@
            (dc-err pos "cannot take the address"))]
       [else exp]))
   (define (dc-err pos msg)
-    (error 'deference-check-error (err-msg pos msg)))
+    (error '|deference check error| (err-msg pos msg)))
   (traverse check-decl check-stmt check-exp ast))
 
 (define (deference-check-str str)

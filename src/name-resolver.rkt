@@ -167,7 +167,7 @@
              (unknown-err pos tgt)))]
       [else exp]))
   (define (nr-err pos msg)
-    (error 'name-resolve-error (err-msg pos msg)))
+    (error '|name resolve error| (err-msg pos msg)))
   (define (redef-err pos name)
     (nr-err pos (format "redifinition of '~a'" name)))
   (define (unknown-err pos name)
