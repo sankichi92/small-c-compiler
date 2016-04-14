@@ -6,7 +6,7 @@ lang racket
          "utils.rkt"
          "traverser.rkt"
          "type-checker.rkt")
-(provide ast->ir)
+(provide ast->ir string->ir)
 
 (define (ast->ir ast)
   (let ([var-maxid 0]
@@ -55,3 +55,7 @@ lang racket
         [(stx:lit-exp val pos) exp]
         [else exp]))
     (traverse decl->ir stmt->ir exp->ir ast)))
+
+(define (string->ir str)
+  (let ([ast (cdr (type-check-str str))])
+    (ast->ir ast)))
