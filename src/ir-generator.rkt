@@ -23,11 +23,14 @@ lang racket
         (string-append "label" (number->string oldid))))
     (define (decl->ir decl)
       (match decl
-        [(stx:var-decl name ty pos) decl]
-        [(stx:parm-decl name ty pos) decl]
-        [(stx:fun-decl name ret-ty parm-tys pos) decl]
-        [(stx:fun-def name ret-ty parms body pos) decl]
-        [else decl]))
+        [(stx:var-decl obj ty pos)
+         (ir:var-decl obj)]
+        [(stx:parm-decl obj ty pos)
+         (ir:var-decl obj)]
+        [(stx:fun-decl obj ret-ty parm-tys pos)
+         (ir:var-decl obj)]
+        [(stx:fun-def obj ret-ty parms body pos)
+         (ir:fun-def obj parms body)]))
     (define (stmt->ir stmt)
       (match stmt
         ['() stmt]
@@ -47,8 +50,8 @@ lang racket
         [(stx:aop-exp op left right pos) exp]
         [(stx:addr-exp var pos) exp]
         [(stx:deref-exp arg pos) exp]
-        [(stx:fun-exp name args pos) exp]
-        [(stx:var-exp tgt pos) exp]
+        [(stx:fun-exp obj args pos) exp]
+        [(stx:var-exp obj pos) exp]
         [(stx:lit-exp val pos) exp]
         [else exp]))
     (traverse decl->ir stmt->ir exp->ir ast)))
