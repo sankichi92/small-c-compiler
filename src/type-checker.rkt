@@ -157,7 +157,7 @@
   (let ([decls (traverse type-check-decl type-check-stmt type-check-exp ast)])
     (if (andmap well-typed? decls)
         (cons 'well-typed ast)
-        decls)))
+        (cons '() decls))))
 
 (define (type-check-str str)
   (type-check (deference-check-str str)))
