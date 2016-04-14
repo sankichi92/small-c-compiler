@@ -24,13 +24,13 @@
     (define (decl->ir decl)
       (match decl
         [(stx:var-decl obj ty pos)
-         (ir:var-decl obj)]
+         (list (ir:var-decl obj))]
         [(stx:parm-decl obj ty pos)
-         (ir:var-decl obj)]
+         (list (ir:var-decl obj))]
         [(stx:fun-decl obj ret-ty parm-tys pos)
-         (ir:var-decl obj)]
+         (list (ir:var-decl obj))]
         [(stx:fun-def obj ret-ty parms body pos)
-         (ir:fun-def obj parms body)]))
+         (list (ir:fun-def obj parms (car body)))]))
     (define (stmt->ir stmt)
       (match stmt
         ['() stmt]
@@ -54,7 +54,7 @@
         [(stx:var-exp obj pos) exp]
         [(stx:lit-exp val pos) exp]
         [else exp]))
-    (traverse decl->ir stmt->ir exp->ir ast)))
+    (traverse decl->ir stmt->ir exp->ir ast append-map)))
 
 (define (string->ir str)
   (let ([ast (cdr (type-check-str str))])

@@ -1,6 +1,8 @@
 #lang racket/base
 (require rackunit
-         "ir.rkt"
+         parser-tools/lex
+         "../src/entity.rkt"
+         "../src/ir.rkt"
          "../src/ir-generator.rkt")
 (require rackunit/text-ui)
 (provide ir-generator-tests)
@@ -8,6 +10,13 @@
 (define ir-generator-tests
   (test-suite
     "Tests for ir-generator.rkt"
+
+    (check-equal?
+      (string->ir "int a;")
+      (list
+        (var-decl (decl 'print 0 'proto '(fun void int)))
+        (var-decl (decl 'a 0 'var 'int)))
+      "Simple")
 
     ))
 
