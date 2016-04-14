@@ -18,6 +18,15 @@
         (var-decl (decl 'a 0 'var 'int)))
       "Simple")
 
+    (check-equal?
+      (cdr (string->ir "void f(){;}"))
+      (list
+        (fun-def
+          (decl 'f 0 'fun '(fun void))
+          '()
+          (cmpd-stmt '() '())))
+      "Statement")
+
     ))
 
 (run-tests ir-generator-tests)

@@ -36,9 +36,10 @@
         ['() stmt]
         [(cons _ _) stmt]
         [(stx:if-els-stmt test tbody ebody pos) stmt]
+        [(stx:cmpd-stmt decls stmts pos)
+         (list (ir:cmpd-stmt decls stmts))]
         [(stx:while-stmt test body pos) stmt]
         [(stx:ret-stmt exp pos) stmt]
-        [(stx:cmpd-stmt decls stmts pos) stmt]
         [else stmt]))
     (define (exp->ir exp)
       (match exp
