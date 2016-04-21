@@ -4,7 +4,6 @@
          (prefix-in ett: "entity.rkt")
          (prefix-in ir:  "ir.rkt")
          "utils.rkt"
-         "traverser.rkt"
          "type-checker.rkt")
 (provide ast->ir string->ir)
 
@@ -23,14 +22,13 @@
         (string-append "label" (number->string oldid))))
     (define (decl->ir decl)
       (match decl
-        [(stx:var-decl obj ty pos)
-         (list (ir:var-decl obj))]
-        [(stx:parm-decl obj ty pos)
-         (list (ir:var-decl obj))]
-        [(stx:fun-decl obj ret-ty parm-tys pos)
-         (list (ir:var-decl obj))]
+        [(stx:var-decl obj ty pos) (ir:var-decl obj)]
+        [(stx:parm-decl obj ty pos) (ir:var-decl obj)]
+        [(stx:fun-decl obj ret-ty parm-tys pos) (ir:var-decl obj)]
         [(stx:fun-def obj ret-ty parms body pos)
-         (list (ir:fun-def obj parms (car body)))]))
+         (let ([new-parms (append-map decl->ir parms)]
+               [new-body (car (stmt->ir body))])
+           (ir:fun-def obj new-parms new-body))]))
     (define (stmt->ir stmt)
       (match stmt
         ['() stmt]
@@ -55,7 +53,7 @@
         [(stx:var-exp obj pos) exp]
         [(stx:lit-exp val pos) exp]
         [else exp]))
-    (traverse decl->ir stmt->ir exp->ir ast append-map)))
+    (map decl->ir ast)))
 
 (define (string->ir str)
   (let ([ast (cdr (type-check-str str))])

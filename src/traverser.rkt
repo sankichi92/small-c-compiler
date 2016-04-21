@@ -2,7 +2,7 @@
 (require (prefix-in stx: "syntax.rkt"))
 (provide traverse)
 
-(define (traverse decl-proc stmt-proc exp-proc ast [map map])
+(define (traverse decl-proc stmt-proc exp-proc ast)
   (define (traverse-decl decl)
     (let ([new-decl
            (match decl
