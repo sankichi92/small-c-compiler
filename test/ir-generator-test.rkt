@@ -14,7 +14,7 @@
     (check-equal?
       (string->ir "int a;")
       (list
-        (var-decl (decl 'print 0 'proto '(fun void int)))
+        (fun-def (decl 'print 0 'proto '(fun void int)) '() '())
         (var-decl (decl 'a 0 'var 'int)))
       "Simple")
 
@@ -25,6 +25,32 @@
           (decl 'f 0 'fun '(fun void))
           '()
           (cmpd-stmt '() '())))
+      "Statement")
+
+    (check-equal?
+      (cdr (string->ir "int f(int a){return a;}"))
+      (list
+        (fun-def
+          (decl 'f 0 'fun '(fun int int))
+          (list (var-decl (decl 'a 1 'parm 'int)))
+          (cmpd-stmt
+           (list (var-decl (decl '_x0 '() 'temp 'temp)))
+           (list
+            (assign-stmt (decl '_x0 '() 'temp 'temp) (var-exp (decl 'a 1 'parm 'int)))
+            (ret-stmt (decl '_x0 '() 'temp 'temp))))))
+      "Statement")
+
+    (check-equal?
+      (cdr (string->ir "int f(int a){if(a>0)a;else 0;}"))
+      (list
+        (fun-def
+          (decl 'f 0 'fun '(fun int int))
+          (list (var-decl (decl 'a 1 'parm 'int)))
+          (cmpd-stmt
+           (list (var-decl (decl '_x0 '() 'temp 'temp)))
+           (list
+            (assign-stmt (decl '_x0 '() 'temp 'temp) (var-exp (decl 'a 1 'parm 'int)))
+            (ret-stmt (decl '_x0 '() 'temp 'temp))))))
       "Statement")
 
     ))
