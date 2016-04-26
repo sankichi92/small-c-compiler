@@ -9,13 +9,23 @@
 
 (define (ast->ir ast)
   (let ([var-maxid 0]
-        [label-maxid 0])
+        [label-maxid 0]
+        [temp-objs (lambda (id) '())])
+    (define (id->name id)
+      (let* ([id-str (number->string id)]
+             [name-str (string-append "_x" id-str)])
+        (string->symbol name-str)))
     (define (fresh-obj)
-      (let* ([oldid var-maxid]
-             [sym-str (string-append "_x" (number->string oldid))]
-             [sym (string->symbol sym-str)])
+      (let* ([old-objs temp-objs]
+             [name (id->name var-maxid)]
+             [decl (ett:decl name '() 'temp 'temp)])
         (set! var-maxid (add1 var-maxid))
-        (ett:decl sym '() 'temp 'temp)))
+        (set! temp-objs
+          (lambda (id)
+            (if (eq? (id->name id) (ett:decl-name decl))
+                (list decl)
+                `(,@(old-objs id) ,decl))))
+        decl))
     (define (fresh-label)
       (let ([oldid label-maxid])
         (set! label-maxid (+ label-maxid 1))
@@ -29,14 +39,19 @@
          (let ([new-parms (map decl->ir parms)]
                [new-body (car (stmt->ir body var-maxid))])
            (ir:fun-def obj new-parms new-body))]))
-    (define (stmt->ir stmt)
+    (define (stmt->ir stmt [var-id '()])
       (match stmt
         ['() '()]
         [(cons _ _)
          (let ([dest (fresh-obj)])
            (exp->ir dest stmt))]
         [(stx:cmpd-stmt decls stmts pos)
-         (list (ir:cmpd-stmt decls stmts))]
+         (let* ([new-decls (map decl->ir decls)]
+                [new-stmts (append-map stmt->ir stmts)]
+                [temp-decls (if (null? var-id)
+                                '()
+                                (map ir:var-decl (temp-objs var-id)))])
+           (list (ir:cmpd-stmt (append new-decls temp-decls) new-stmts)))]
         [(stx:if-els-stmt test tbody ebody pos)
          (let ([test-var (fresh-obj)]
                [label1 (fresh-label)]
