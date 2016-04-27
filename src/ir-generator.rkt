@@ -7,8 +7,6 @@
          "type-checker.rkt")
 (provide ast->ir string->ir)
 
-; TODO: ポインタへの加減算については注意が必要である．ポインタではない方のオペランドは（バイト数ではなく）要素数をあらわしているため，低レベルのアドレス演算として正しく機能するためには，4を掛ける必要がある．たとえばpがポインタ型
-
 (define (ast->ir ast)
   (let ([var-maxid 0]
         [label-maxid 0]
@@ -150,9 +148,25 @@
         [(stx:aop-exp op left right pos)
          (let ([left-var (fresh-obj)]
                [right-var (fresh-obj)])
-           `(,@(exp->ir left-var left)
-             ,@(exp->ir right-var right)
-             ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var))))]
+           (if (or (eq? '+ op) (eq? '- op))
+               (let ([offset (fresh-obj)])
+                 (cond [(and (stx:var-exp? left)
+                             (eq? 'array (car (ett:decl-type (stx:var-exp-tgt left)))))
+                        `(,@(exp->ir left-var left)
+                          ,@(exp->ir right-var right)
+                          ,(ir:assign-stmt offset (ir:lit-exp 4))
+                          ,(ir:assign-stmt right-var (ir:aop-exp '* right-var offset))
+                          ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))]
+                       [(and (stx:var-exp? right)
+                             (eq? 'array (car (ett:decl-type (stx:var-exp-tgt right)))))
+                        `(,@(exp->ir left-var left)
+                          ,@(exp->ir right-var right)
+                          ,(ir:assign-stmt offset (ir:lit-exp 4))
+                          ,(ir:assign-stmt left-var (ir:aop-exp '* left-var offset))
+                          ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))]))
+               `(,@(exp->ir left-var left)
+                 ,@(exp->ir right-var right)
+                 ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))))]
         [(stx:addr-exp var pos)
          (let ([src (fresh-obj)])
            `(,@(exp->ir src var)
