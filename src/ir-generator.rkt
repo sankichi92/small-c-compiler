@@ -7,6 +7,8 @@
          "type-checker.rkt")
 (provide ast->ir string->ir)
 
+; TODO: ポインタへの加減算については注意が必要である．ポインタではない方のオペランドは（バイト数ではなく）要素数をあらわしているため，低レベルのアドレス演算として正しく機能するためには，4を掛ける必要がある．たとえばpがポインタ型
+
 (define (ast->ir ast)
   (let ([var-maxid 0]
         [label-maxid 0]
@@ -160,10 +162,20 @@
            `(,@(exp->ir src arg)
              ,(ir:read-stmt dest src)))]
         [(stx:fun-exp obj args pos)
-         (let ([vars (append-map (lambda (e)
-                                         (ir:var-exp (exp->ir (fresh-obj) e)))
-                                 args)])
-           (list (ir:call-stmt dest obj vars)))]
+         (if (eq? 'print (ett:decl-name obj))
+             (let ([var (fresh-obj)])
+               `(,@(exp->ir var (car args))
+                 ,(ir:print-stmt var)
+                 ,(ir:assign-stmt dest var)))
+             (let* ([vars '()]
+                    [new-args (append-map
+                                  (lambda (e)
+                                    (let ([var (fresh-obj)])
+                                      (set! vars (append vars (list var)))
+                                      (exp->ir var e)))
+                                  args)])
+               `(,@new-args
+                 ,(ir:call-stmt dest obj vars))))]
         [(stx:var-exp obj pos)
          (list (ir:assign-stmt dest (ir:var-exp obj)))]
         [(stx:lit-exp val pos)
