@@ -148,13 +148,14 @@
        (let ([new-arg (resolve-exp env lev arg)])
          (stx:deref-exp new-arg pos))]
       [(stx:fun-exp name args pos)
-       (let ([obj (env name)])
+       (let ([new-args (resolve-exp-list env lev args)]
+             [obj (env name)])
          (if obj
              (let ([kind (ett:decl-kind obj)]
                    [type (ett:decl-type obj)])
                (if (or (eq? kind 'var) (eq? kind 'parm))
                    (nr-err pos (format "called object type '~a' is not a function or function pointer" type))
-                   (stx:fun-exp obj args pos)))
+                   (stx:fun-exp obj new-args pos)))
              (unknown-err pos name)))]
       [(stx:var-exp tgt pos)
        (let ([obj (env tgt)])
