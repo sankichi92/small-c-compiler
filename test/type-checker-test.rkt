@@ -1,83 +1,86 @@
 #lang racket/base
 (require rackunit
-         "../src/type-checker.rkt")
+         "../src/compiler.rkt")
 (require rackunit/text-ui)
 (provide type-checker-tests)
+
+(define (well-typed? sym)
+  (eq? sym 'well-typed))
+
+(define (check-string str)
+  (test-string str #:phase 'ty-check))
+
+(define (check-file fname)
+  (test-file fname #:phase 'ty-check))
 
 (define type-checker-tests
   (test-suite
     "Tests for type-checker.rkt"
 
-    ;(check-pred
-    ;  well-typed?
-    ;  (type-check
-    ;    (list 'well-typed 'well-typed))
-    ;  "program")
-
     (check-exn
       exn:fail?
       (lambda ()
-        (type-check-str "void a;"))
+        (check-string "void a;"))
       "variable has incomplete type 'void'")
 
     (check-exn
       exn:fail?
       (lambda ()
-        (type-check-str "void a[0];"))
+        (check-string "void a[0];"))
       "array has incomplete element type 'void'")
 
     (check-exn
       exn:fail?
       (lambda ()
-        (type-check-str "void *p;"))
+        (check-string "void *p;"))
       "pointer has incomplete type 'void'")
 
     (check-pred
       well-typed?
-      (car (type-check-str "int a;"))
+      (car (check-string "int a;"))
       "'int a;' is well-typed")
 
     (check-pred
       well-typed?
-      (car (type-check-str "int main(){;}"))
+      (car (check-string "int main(){;}"))
       "well-typed")
 
     (check-pred
       well-typed?
-      (car (type-check-str "void f(){0,1;}"))
+      (car (check-string "void f(){0,1;}"))
       "well-typed")
 
     (check-exn
       exn:fail?
       (lambda ()
-        (type-check-str "int main(){int a;return &a;}"))
+        (check-string "int main(){int a;return &a;}"))
       "incompatible returning 'int*' from a function with result type 'int'")
 
     (check-exn
       exn:fail?
       (lambda ()
-        (type-check-str "void *f(){}"))
+        (check-string "void *f(){}"))
       "pointer has incomplete type 'void'")
 
     (check-exn
       exn:fail?
       (lambda ()
-        (type-check-str "void f(){int *a;a=0;}"))
+        (check-string "void f(){int *a;a=0;}"))
       "incompatible assigning to 'int*' from 'int'")
 
     (check-pred
       well-typed?
-      (car (type-check-str "int a[1];int g(int a){a=0;return a==1;}int *f(){int b;a[0]=1;b=a[0]+1;return &b;}"))
+      (car (check-string "int a[1];int g(int a){a=0;return a==1;}int *f(){int b;a[0]=1;b=a[0]+1;return &b;}"))
       "well-typed")
 
     (check-pred
       well-typed?
-      (car (type-check-file "program/test.sc"))
+      (car (check-file "program/test.sc"))
       "test.sc")
 
     (check-pred
       well-typed?
-      (car (type-check-file "program/sort.sc"))
+      (car (check-file "program/sort.sc"))
       "sort.sc")
 
   ))

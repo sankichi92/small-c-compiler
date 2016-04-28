@@ -3,10 +3,7 @@
          (prefix-in ett: "entity.rkt")
          "utils.rkt"
          "traverser.rkt")
-(provide well-typed? type-check)
-
-(define (well-typed? sym)
-  (eq? sym 'well-typed))
+(provide type-check)
 
 (define (type-check ast)
   (define (type-check-decl decl)
@@ -144,6 +141,8 @@
     (if (symbol? type)
         type
         (string->symbol (type->string type))))
+  (define (well-typed? sym)
+    (eq? sym 'well-typed))
   (define (int? exp)
     (eq? exp 'int))
   (define (int*? exp)

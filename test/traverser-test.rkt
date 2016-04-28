@@ -1,7 +1,6 @@
 #lang racket/base
 (require rackunit
          parser-tools/lex
-         parser-tools/yacc
          "../src/syntax.rkt"
          "../src/traverser.rkt")
 (require rackunit/text-ui)

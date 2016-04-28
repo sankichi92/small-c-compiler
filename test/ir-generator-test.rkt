@@ -1,11 +1,13 @@
 #lang racket/base
 (require rackunit
-         parser-tools/lex
          "../src/entity.rkt"
          "../src/ir.rkt"
-         "../src/ir-generator.rkt")
+         "../src/compiler.rkt")
 (require rackunit/text-ui)
 (provide ir-generator-tests)
+
+(define (string->ir str)
+  (test-string str #:phase 'ir))
 
 (define ir-generator-tests
   (test-suite
