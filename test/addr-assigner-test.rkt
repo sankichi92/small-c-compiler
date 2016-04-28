@@ -2,16 +2,19 @@
 (require rackunit
          "../src/entity.rkt"
          "../src/ir.rkt"
-         "../src/addr-assigner.rkt")
+         "../src/compiler.rkt")
 (require rackunit/text-ui)
 (provide addr-assigner-tests)
+
+(define (assign-string str)
+  (test-string str #:phase 'addr))
 
 (define addr-assigner-tests
   (test-suite
     "Tests for addr-assigner.rkt"
 
     (check-equal?
-      (cdr (addr-assign-str "void f(int a,int b,int c,int *d,int *e,int *f){int x,y[4];;}"))
+      (cdr (assign-string "void f(int a,int b,int c,int *d,int *e,int *f){int x,y[4];;}"))
       (list
        (fun-def
         (decl

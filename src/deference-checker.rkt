@@ -1,11 +1,9 @@
 #lang racket
-(require parser-tools/lex
-         (prefix-in stx: "syntax.rkt")
+(require (prefix-in stx: "syntax.rkt")
          (prefix-in ett: "entity.rkt")
          "utils.rkt"
-         "traverser.rkt"
-         "name-resolver.rkt")
-(provide deference-check deference-check-str deference-check-file)
+         "traverser.rkt")
+(provide deference-check)
 
 (define (deference-check ast)
   (define (check-decl decl) decl)
@@ -31,9 +29,3 @@
   (define (dc-err pos msg)
     (error '|deference check error| (err-msg pos msg)))
   (traverse check-decl check-stmt check-exp ast))
-
-(define (deference-check-str str)
-  (deference-check (name-resolve-str str)))
-
-(define (deference-check-file file)
-  (deference-check (name-resolve-file file)))

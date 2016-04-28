@@ -2,9 +2,15 @@
 (require rackunit
          parser-tools/lex
          "../src/syntax.rkt"
-         "../src/parser.rkt")
+         "../src/compiler.rkt")
 (require rackunit/text-ui)
 (provide parser-tests)
+
+(define (parse-string str)
+  (test-string str #:phase 'parse))
+
+(define (parse-file fname)
+  (test-file fname #:phase 'parse))
 
 (define parser-tests
   (test-suite

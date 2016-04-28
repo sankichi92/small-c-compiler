@@ -1,13 +1,10 @@
 #lang racket
-(require parser-tools/lex
-         (prefix-in stx: "syntax.rkt")
+(require (prefix-in stx: "syntax.rkt")
          (prefix-in ett: "entity.rkt")
-         (prefix-in ir:  "ir.rkt")
-         "utils.rkt"
-         "type-checker.rkt")
-(provide ast->ir string->ir file->ir)
+         (prefix-in ir:  "ir.rkt"))
+(provide ast->ir)
 
-(define (ast->ir ast)
+(define (ast->ir checked-ast)
   (let ([var-maxid 0]
         [label-maxid 0]
         [temp-objs (lambda (id) '())])
@@ -198,12 +195,4 @@
          (list (ir:assign-stmt dest (ir:var-exp obj)))]
         [(stx:lit-exp val pos)
          (list (ir:assign-stmt dest (ir:lit-exp val)))]))
-    (map decl->ir ast)))
-
-(define (string->ir str)
-  (let ([ast (cdr (type-check-str str))])
-    (ast->ir ast)))
-
-(define (file->ir file)
-  (let ([ast (cdr (type-check-file file))])
-    (ast->ir ast)))
+    (map decl->ir (cdr checked-ast))))

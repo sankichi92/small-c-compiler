@@ -1,9 +1,7 @@
 #lang racket
 (require (prefix-in ett: "entity.rkt")
-         (prefix-in ir:  "ir.rkt")
-         "utils.rkt"
-         "ir-generator.rkt")
-(provide addr-assign addr-assign-str addr-assign-file)
+         (prefix-in ir:  "ir.rkt"))
+(provide addr-assign)
 
 (define (addr-assign ir)
   (define offset 4)
@@ -57,11 +55,3 @@
              (ett:set-decl-offset! obj ofs)
              (cons var-decl (- ofs offset))])))
   (map addr-decl ir))
-
-(define (addr-assign-str str)
-  (let ([ir (string->ir str)])
-    (addr-assign ir)))
-
-(define (addr-assign-file file)
-  (let ([ir (file->ir file)])
-    (addr-assign ir)))

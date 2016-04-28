@@ -1,10 +1,8 @@
 #lang racket
-(require parser-tools/lex
-         (prefix-in stx: "syntax.rkt")
+(require (prefix-in stx: "syntax.rkt")
          (prefix-in ett: "entity.rkt")
-         "utils.rkt"
-         "parser.rkt")
-(provide name-resolve name-resolve-str name-resolve-file)
+         "utils.rkt")
+(provide name-resolve)
 
 (define (name-resolve ast)
   (define initial-env (lambda (x) #f))
@@ -174,9 +172,3 @@
   (define (unknown-err pos name)
     (nr-err pos (format "unknown identifier '~a'" name)))
   (car (resolve-decl-list initial-env 0 ast)))
-
-(define (name-resolve-str str)
-  (name-resolve (parse-string str)))
-
-(define (name-resolve-file file)
-  (name-resolve (parse-file file)))
