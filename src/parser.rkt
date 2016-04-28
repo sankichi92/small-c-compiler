@@ -239,7 +239,7 @@
      ((argument-expression-list COMMA assign-expr) `(,@$1 ,$3))))))
 
 (define (format-ty main sub)
-  (cond [(null? sub)
+  (cond [(or (null? sub) (null? (car sub)))
          main]
         [(eq? 'array (car sub))
          (list 'array main (cdr sub))]
