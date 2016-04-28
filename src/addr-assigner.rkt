@@ -3,7 +3,7 @@
          (prefix-in ir:  "ir.rkt")
          "utils.rkt"
          "ir-generator.rkt")
-(provide addr-assign addr-assign-str)
+(provide addr-assign addr-assign-str addr-assign-file)
 
 (define (addr-assign ir)
   (define offset 4)
@@ -60,4 +60,8 @@
 
 (define (addr-assign-str str)
   (let ([ir (string->ir str)])
+    (addr-assign ir)))
+
+(define (addr-assign-file file)
+  (let ([ir (file->ir file)])
     (addr-assign ir)))
