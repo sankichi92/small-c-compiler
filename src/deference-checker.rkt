@@ -5,7 +5,7 @@
          "utils.rkt"
          "traverser.rkt"
          "name-resolver.rkt")
-(provide deference-check deference-check-str)
+(provide deference-check deference-check-str deference-check-file)
 
 (define (deference-check ast)
   (define (check-decl decl) decl)
@@ -34,3 +34,6 @@
 
 (define (deference-check-str str)
   (deference-check (name-resolve-str str)))
+
+(define (deference-check-file file)
+  (deference-check (name-resolve-file file)))

@@ -202,6 +202,58 @@
             (lit-exp '1 (position 26 1 25))
             '())))
       "Syntax sugar: &e1[e2] -> (e1 + e2)")
+
+    (check-equal?
+      (parse-file "program/test.sc")
+      (list
+       (fun-decl 'print 'void '(int) '())
+       (fun-def
+        'f
+        'int
+        (list (parm-decl 'x 'int (position 11 1 10)))
+        (cmpd-stmt
+         '()
+         (list
+          (while-stmt
+           (list
+            (rop-exp
+             '>
+             (var-exp 'x (position 24 2 8))
+             (lit-exp 1 (position 28 2 12))
+             (position 26 2 10)))
+           (cmpd-stmt
+            '()
+            (list
+             (list
+              (assign-exp
+               (var-exp 'x (position 37 3 4))
+               (aop-exp
+                '-
+                (var-exp 'x (position 41 3 8))
+                (lit-exp 2 (position 45 3 12))
+                (position 43 3 10))
+               (position 39 3 6))))
+            (position 31 2 15))
+           (position 18 2 2))
+          (ret-stmt (list (var-exp 'x (position 61 5 9))) (position 54 5 2)))
+         (position 14 1 13))
+        (position 1 1 0))
+       (fun-def
+        'main
+        'void
+        '()
+        (cmpd-stmt
+         (list (var-decl 'x 'int (position 87 9 6)))
+         (list
+          (list
+           (fun-exp
+            'print
+            (list
+             (fun-exp 'f (list (lit-exp 9 (position 100 10 10))) (position 98 10 8)))
+            (position 92 10 2))))
+         (position 79 8 12))
+        (position 67 8 0)))
+      "test.sc")
   ))
 
 (run-tests parser-tests)

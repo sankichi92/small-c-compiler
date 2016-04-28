@@ -5,7 +5,7 @@
          (prefix-in ir:  "ir.rkt")
          "utils.rkt"
          "type-checker.rkt")
-(provide ast->ir string->ir)
+(provide ast->ir string->ir file->ir)
 
 (define (ast->ir ast)
   (let ([var-maxid 0]
@@ -147,26 +147,30 @@
              ,(ir:assign-stmt dest (ir:rop-exp op left-var right-var))))]
         [(stx:aop-exp op left right pos)
          (let ([left-var (fresh-obj)]
-               [right-var (fresh-obj)])
-           (if (or (eq? '+ op) (eq? '- op))
-               (let ([offset (fresh-obj)])
-                 (cond [(and (stx:var-exp? left)
-                             (eq? 'array (car (ett:decl-type (stx:var-exp-tgt left)))))
-                        `(,@(exp->ir left-var left)
-                          ,@(exp->ir right-var right)
-                          ,(ir:assign-stmt offset (ir:lit-exp 4))
-                          ,(ir:assign-stmt right-var (ir:aop-exp '* right-var offset))
-                          ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))]
-                       [(and (stx:var-exp? right)
-                             (eq? 'array (car (ett:decl-type (stx:var-exp-tgt right)))))
-                        `(,@(exp->ir left-var left)
-                          ,@(exp->ir right-var right)
-                          ,(ir:assign-stmt offset (ir:lit-exp 4))
-                          ,(ir:assign-stmt left-var (ir:aop-exp '* left-var offset))
-                          ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))]))
-               `(,@(exp->ir left-var left)
-                 ,@(exp->ir right-var right)
-                 ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))))]
+               [right-var (fresh-obj)]
+               [offset (fresh-obj)])
+           (cond [(and (or (eq? '+ op) (eq? '- op))
+                       (stx:var-exp? left)
+                       (let ([type (ett:decl-type (stx:var-exp-tgt left))])
+                         (and (list? type) (eq? 'array (car type)))))
+                  `(,@(exp->ir left-var left)
+                    ,@(exp->ir right-var right)
+                    ,(ir:assign-stmt offset (ir:lit-exp 4))
+                    ,(ir:assign-stmt right-var (ir:aop-exp '* right-var offset))
+                    ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))]
+                 [(and (or (eq? '+ op) (eq? '- op))
+                       (stx:var-exp? right)
+                       (let ([type (ett:decl-type (stx:var-exp-tgt right))])
+                         (and (list? type) (eq? 'array (car type)))))
+                  `(,@(exp->ir left-var left)
+                    ,@(exp->ir right-var right)
+                    ,(ir:assign-stmt offset (ir:lit-exp 4))
+                    ,(ir:assign-stmt left-var (ir:aop-exp '* left-var offset))
+                    ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))]
+                 [else
+                  `(,@(exp->ir left-var left)
+                    ,@(exp->ir right-var right)
+                    ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))]))]
         [(stx:addr-exp var pos)
          (let ([src (fresh-obj)])
            `(,@(exp->ir src var)
@@ -198,4 +202,8 @@
 
 (define (string->ir str)
   (let ([ast (cdr (type-check-str str))])
+    (ast->ir ast)))
+
+(define (file->ir file)
+  (let ([ast (cdr (type-check-file file))])
     (ast->ir ast)))

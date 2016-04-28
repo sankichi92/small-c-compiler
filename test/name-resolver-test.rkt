@@ -107,6 +107,64 @@
          (position 9 1 8))
         (position 1 1 0)))
       "smpd-stmt scope")
+
+    (check-equal?
+      (name-resolve-file "program/test.sc")
+      (list
+       (fun-decl (decl 'print 0 'proto '(fun void int)) 'void '(int) '())
+       (fun-def
+        (decl 'f 0 'fun '(fun int int))
+        'int
+        (list (parm-decl (decl 'x 1 'parm 'int) 'int (position 11 1 10)))
+        (cmpd-stmt
+         '()
+         (list
+          (while-stmt
+           (list
+            (rop-exp
+             '>
+             (var-exp (decl 'x 1 'parm 'int) (position 24 2 8))
+             (lit-exp 1 (position 28 2 12))
+             (position 26 2 10)))
+           (cmpd-stmt
+            '()
+            (list
+             (list
+              (assign-exp
+               (var-exp (decl 'x 1 'parm 'int) (position 37 3 4))
+               (aop-exp
+                '-
+                (var-exp (decl 'x 1 'parm 'int) (position 41 3 8))
+                (lit-exp 2 (position 45 3 12))
+                (position 43 3 10))
+               (position 39 3 6))))
+            (position 31 2 15))
+           (position 18 2 2))
+          (ret-stmt
+           (list (var-exp (decl 'x 1 'parm 'int) (position 61 5 9)))
+           (position 54 5 2)))
+         (position 14 1 13))
+        (position 1 1 0))
+       (fun-def
+        (decl 'main 0 'fun '(fun void))
+        'void
+        '()
+        (cmpd-stmt
+         (list (var-decl (decl 'x 2 'var 'int) 'int (position 87 9 6)))
+         (list
+          (list
+           (fun-exp
+            (decl 'print 0 'proto '(fun void int))
+            (list
+             (fun-exp
+              (decl 'f 0 'fun '(fun int int))
+              (list (lit-exp 9 (position 100 10 10)))
+              (position 98 10 8)))
+            (position 92 10 2))))
+         (position 79 8 12))
+        (position 67 8 0)))
+      "test.sc")
+
     ))
 
 (run-tests name-resolver-tests)

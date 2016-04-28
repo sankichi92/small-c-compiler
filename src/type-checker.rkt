@@ -5,7 +5,7 @@
          "utils.rkt"
          "traverser.rkt"
          "deference-checker.rkt")
-(provide well-typed? type-check type-check-str)
+(provide well-typed? type-check type-check-str type-check-file)
 
 (define (well-typed? sym)
   (eq? sym 'well-typed))
@@ -161,3 +161,6 @@
 
 (define (type-check-str str)
   (type-check (deference-check-str str)))
+
+(define (type-check-file file)
+  (type-check (deference-check-file file)))

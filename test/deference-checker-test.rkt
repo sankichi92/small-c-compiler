@@ -48,6 +48,16 @@
         (deference-check-str "int a[1];void b(){int c;int *d;a[0]=0;c=1;*d=2;}"))
       "Operator '=' can have a variable as operand")
 
+    (check-not-exn
+      (lambda ()
+        (deference-check-file "program/test.sc"))
+      "test.sc")
+
+    (check-not-exn
+      (lambda ()
+        (deference-check-file "program/sort.sc"))
+      "sort.sc")
+
   ))
 
 (run-tests deference-checker-tests)
