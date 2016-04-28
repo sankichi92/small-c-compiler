@@ -3,7 +3,7 @@
          (prefix-in : parser-tools/lex-sre)
          parser-tools/yacc
          (prefix-in stx: "syntax.rkt"))
-(provide parse-string parse-file)
+(provide parse-string)
 
 (define-tokens tokens-with-value
   (NUM ID))
@@ -263,6 +263,3 @@
 
 (define (parse-string str)
   (parse-port (open-input-string str)))
-
-(define (parse-file fname)
-  (parse-port (open-input-file fname)))
