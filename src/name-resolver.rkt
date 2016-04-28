@@ -4,7 +4,7 @@
          (prefix-in ett: "entity.rkt")
          "utils.rkt"
          "parser.rkt")
-(provide name-resolve name-resolve-str)
+(provide name-resolve name-resolve-str name-resolve-file)
 
 (define (name-resolve ast)
   (define initial-env (lambda (x) #f))
@@ -177,3 +177,6 @@
 
 (define (name-resolve-str str)
   (name-resolve (parse-string str)))
+
+(define (name-resolve-file file)
+  (name-resolve (parse-file file)))
