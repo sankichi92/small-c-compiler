@@ -5,7 +5,7 @@
          (prefix-in ir:  "ir.rkt")
          "utils.rkt"
          "type-checker.rkt")
-(provide ast->ir string->ir)
+(provide ast->ir string->ir file->ir)
 
 (define (ast->ir ast)
   (let ([var-maxid 0]
@@ -202,4 +202,8 @@
 
 (define (string->ir str)
   (let ([ast (cdr (type-check-str str))])
+    (ast->ir ast)))
+
+(define (file->ir file)
+  (let ([ast (cdr (type-check-file file))])
     (ast->ir ast)))
