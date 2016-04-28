@@ -3,7 +3,7 @@
          (prefix-in : parser-tools/lex-sre)
          parser-tools/yacc
          (prefix-in stx: "syntax.rkt"))
-(provide parse-string)
+(provide parse-port)
 
 (define-tokens tokens-with-value
   (NUM ID))
@@ -260,6 +260,3 @@
   (port-count-lines! port)
   (append-print-fun
     (small-c-parser (lambda () (small-c-lexer port)))))
-
-(define (parse-string str)
-  (parse-port (open-input-string str)))

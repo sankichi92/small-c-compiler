@@ -11,9 +11,9 @@
          "code-generator.rkt")
 (provide compile test-file test-string)
 
-(define (comp str #:phase [phase 'asm])
+(define (comp port #:phase [phase 'asm])
   (define phases
-    `((parse      . ,parse-string)
+    `((parse      . ,parse-port)
       (resolve    . ,name-resolve)
       (def-check  . ,deference-check)
       (ty-check   . ,type-check)
@@ -28,19 +28,17 @@
                     (if (eq? phase (car (first remaining-phases)))
                         r
                         (aux r (rest remaining-phases)))))])
-    (aux str phases)))
+    (aux port phases)))
 
 (define (test-string str #:phase [phase 'asm])
-  (comp str #:phase phase))
+  (let ([port (open-input-string str)])
+  (comp port #:phase phase)))
 
 (define (test-file fname #:phase [phase 'asm])
-  (let* ([in (open-input-file fname)]
-         [str (string-join (port->lines in))])
-    (close-input-port in)
-    (comp str #:phase phase)))
+  (let* ([port (open-input-file fname)])
+    (comp port #:phase phase)))
 
 (define (compile fname)
-  (define (dump-str str)
+  (let ([str (test-file fname)])
     (display str)
-    (newline))
-  (dump-str (test-file fname)))
+    (newline)))
