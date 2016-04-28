@@ -7,7 +7,7 @@
          "type-checker.rkt")
 (provide ast->ir string->ir file->ir)
 
-(define (ast->ir ast)
+(define (ast->ir checked-ast)
   (let ([var-maxid 0]
         [label-maxid 0]
         [temp-objs (lambda (id) '())])
@@ -198,12 +198,12 @@
          (list (ir:assign-stmt dest (ir:var-exp obj)))]
         [(stx:lit-exp val pos)
          (list (ir:assign-stmt dest (ir:lit-exp val)))]))
-    (map decl->ir ast)))
+    (map decl->ir (cdr checked-ast))))
 
 (define (string->ir str)
-  (let ([ast (cdr (type-check-str str))])
-    (ast->ir ast)))
+  (let ([checked-ast (type-check-str str)])
+    (ast->ir checked-ast)))
 
 (define (file->ir file)
-  (let ([ast (cdr (type-check-file file))])
-    (ast->ir ast)))
+  (let ([checked-ast (type-check-file file)])
+    (ast->ir checked-ast)))
