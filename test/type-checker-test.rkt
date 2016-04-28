@@ -70,6 +70,16 @@
       (car (type-check-str "int a[1];int g(int a){a=0;return a==1;}int *f(){int b;a[0]=1;b=a[0]+1;return &b;}"))
       "well-typed")
 
+    (check-pred
+      well-typed?
+      (car (type-check-file "program/test.sc"))
+      "test.sc")
+
+    (check-pred
+      well-typed?
+      (car (type-check-file "program/sort.sc"))
+      "sort.sc")
+
   ))
 
 (run-tests type-checker-tests)
