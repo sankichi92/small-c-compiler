@@ -89,17 +89,14 @@
                              (exp->ir dest e))
                      exp)]
         [(stx:assign-exp left right pos)
-         (let ([right-var (fresh-obj)])
-           (if (stx:deref-exp? left)
-               (let ([left-var (fresh-obj)])
-                 `(,@(exp->ir left-var left)
-                   ,@(exp->ir right-var right)
-                   ,(ir:write-stmt left-var right-var)
-                   ,(ir:assign-stmt dest (ir:var-exp right-var))))
-               (let ([left-var (stx:var-exp-tgt left)])
-                 `(,@(exp->ir right-var right)
-                   ,(ir:assign-stmt left-var (ir:var-exp right-var))
-                   ,(ir:assign-stmt dest (ir:var-exp right-var))))))]
+         (if (stx:deref-exp? left)
+             (let ([left-var (fresh-obj)]
+                   [right-var (fresh-obj)])
+               `(,@(exp->ir left-var (stx:deref-exp-arg left))
+                 ,@(exp->ir right-var right)
+                 ,(ir:write-stmt left-var right-var)))
+             (let ([left-var (stx:var-exp-tgt left)])
+               `(,@(exp->ir left-var right))))]
         [(stx:lop-exp op left right pos)
          (let* ([left-var (fresh-obj)]
                 [right-var (fresh-obj)]
