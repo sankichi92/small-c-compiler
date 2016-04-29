@@ -165,9 +165,9 @@
                     ,@(exp->ir right-var right)
                     ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))]))]
         [(stx:addr-exp var pos)
-         (let ([src (fresh-obj)])
-           `(,@(exp->ir src var)
-             ,(ir:write-stmt dest src)))]
+         (let ([new-var (fresh-obj)])
+           `(,@(exp->ir new-var var)
+             ,(ir:assign-stmt dest (ir:addr-exp new-var))))]
         [(stx:deref-exp arg pos)
          (let ([src (fresh-obj)])
            `(,@(exp->ir src arg)
