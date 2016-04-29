@@ -12,10 +12,10 @@
     (match exp
       [(stx:assign-exp left right pos)
        (if (or (stx:deref-exp? left)
-                (and (stx:var-exp? left)
-                     (let* ([decl (stx:var-exp-tgt left)]
-                            [type (ett:decl-type decl)]
-                            [array? (if (eq? type 'int)
+               (and (stx:var-exp? left)
+                    (let* ([decl (stx:var-exp-tgt left)]
+                           [type (ett:decl-type decl)]
+                           [array? (if (eq? type 'int)
                                       #f
                                       (eq? (car type) 'array))])
                         (not array?))))

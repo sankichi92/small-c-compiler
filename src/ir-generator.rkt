@@ -26,7 +26,7 @@
     (define (fresh-label)
       (let ([oldid label-maxid])
         (set! label-maxid (+ label-maxid 1))
-        (string-append "label" (number->string oldid))))
+        (string-append "L" (number->string oldid))))
     (define (decl->ir decl)
       (match decl
         [(stx:var-decl obj ty pos)
@@ -173,8 +173,7 @@
          (if (eq? 'print (ett:decl-name obj))
              (let ([var (fresh-obj)])
                `(,@(exp->ir var (car args))
-                 ,(ir:print-stmt var)
-                 ,(ir:assign-stmt dest var)))
+                 ,(ir:print-stmt var)))
              (let* ([vars '()]
                     [new-args (append-map
                                   (lambda (e)

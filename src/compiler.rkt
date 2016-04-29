@@ -1,8 +1,5 @@
 #lang racket
-(require (prefix-in stx: "syntax.rkt")
-         (prefix-in ett: "entity.rkt")
-         (prefix-in ir:  "ir.rkt")
-         "parser.rkt"
+(require "parser.rkt"
          "name-resolver.rkt"
          "dereference-checker.rkt"
          "type-checker.rkt"
