@@ -58,9 +58,7 @@
                [label2 (fresh-label)]
                [label3 (fresh-label)])
            `(,@(exp->ir test-var test)
-             ,(ir:if-stmt test-var
-                          (ir:goto-stmt label1)
-                          (ir:goto-stmt label2))
+             ,(ir:if-stmt test-var label1 label2)
              ,(ir:label-stmt label1)
              ,@(stmt->ir tbody)
              ,(ir:goto-stmt label3)
@@ -74,9 +72,7 @@
                [label3 (fresh-label)])
            `(,(ir:label-stmt label1)
              ,@(exp->ir test-var test)
-             ,(ir:if-stmt test-var
-                          (ir:goto-stmt label2)
-                          (ir:goto-stmt label3))
+             ,(ir:if-stmt test-var label2 label3)
              ,(ir:label-stmt label2)
              ,@(stmt->ir body)
              ,(ir:goto-stmt label1)
@@ -111,28 +107,20 @@
            (match op
              ['|| `(,@left-ir
                     ,@right-ir
-                    ,(ir:if-stmt left-var
-                                 (ir:goto-stmt label1)
-                                 (ir:goto-stmt label2))
+                    ,(ir:if-stmt left-var label1 label2)
                     ,(ir:label-stmt label1)
                     ,(ir:assign-stmt dest (ir:lit-exp 1))
                     ,(ir:goto-stmt label3)
                     ,(ir:label-stmt label2)
-                    ,(ir:if-stmt right-var
-                                 (ir:goto-stmt label1)
-                                 (ir:goto-stmt label4))
+                    ,(ir:if-stmt right-var label1 label4)
                     ,(ir:label-stmt label4)
                     ,(ir:assign-stmt dest (ir:lit-exp 0))
                     ,(ir:label-stmt label3))]
              ['&& `(,@left-ir
                     ,@right-ir
-                    ,(ir:if-stmt left-var
-                                 (ir:goto-stmt label1)
-                                 (ir:goto-stmt label2))
+                    ,(ir:if-stmt left-var label1 label2)
                     ,(ir:label-stmt label1)
-                    ,(ir:if-stmt right-var
-                                 (ir:goto-stmt label3)
-                                 (ir:goto-stmt label2))
+                    ,(ir:if-stmt right-var label3 label2)
                     ,(ir:label-stmt label3)
                     ,(ir:assign-stmt dest (ir:lit-exp 1))
                     ,(ir:goto-stmt label4)
