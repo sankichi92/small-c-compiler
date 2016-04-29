@@ -185,7 +185,10 @@
                `(,@new-args
                  ,(ir:call-stmt dest obj vars))))]
         [(stx:var-exp obj pos)
-         (list (ir:assign-stmt dest (ir:var-exp obj)))]
+         (let ([type (ett:decl-type obj)])
+           (if (and (list? type) (eq? (first type) 'array))
+               (list (ir:assign-stmt dest (ir:addr-exp obj)))
+               (list (ir:assign-stmt dest (ir:var-exp obj)))))]
         [(stx:lit-exp val pos)
          (list (ir:assign-stmt dest (ir:lit-exp val)))]))
     (append-map decl->ir (cdr checked-ast))))
