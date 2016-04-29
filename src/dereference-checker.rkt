@@ -3,9 +3,9 @@
          (prefix-in ett: "entity.rkt")
          "utils.rkt"
          "traverser.rkt")
-(provide deference-check)
+(provide dereference-check)
 
-(define (deference-check ast)
+(define (dereference-check ast)
   (define (check-decl decl) decl)
   (define (check-stmt stmt) stmt)
   (define (check-exp exp)
@@ -27,5 +27,5 @@
            (dc-err pos "cannot take the address"))]
       [else exp]))
   (define (dc-err pos msg)
-    (error '|deference check error| (err-msg pos msg)))
+    (error '|dereference check error| (err-msg pos msg)))
   (traverse check-decl check-stmt check-exp ast))

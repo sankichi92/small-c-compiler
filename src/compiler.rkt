@@ -4,7 +4,7 @@
          (prefix-in ir:  "ir.rkt")
          "parser.rkt"
          "name-resolver.rkt"
-         "deference-checker.rkt"
+         "dereference-checker.rkt"
          "type-checker.rkt"
          "ir-generator.rkt"
          "addr-assigner.rkt"
@@ -13,14 +13,14 @@
 
 (define (comp port #:phase [phase 'asm])
   (define phases
-    `((parse      . ,parse-port)
-      (resolve    . ,name-resolve)
-      (def-check  . ,deference-check)
-      (ty-check   . ,type-check)
-      (ir         . ,ast->ir)
-      (addr       . ,addr-assign)
-      (gen        . ,ir->code)
-      (asm        . ,code->string)))
+    `((parse        . ,parse-port)
+      (resolve      . ,name-resolve)
+      (deref-check  . ,dereference-check)
+      (ty-check     . ,type-check)
+      (ir           . ,ast->ir)
+      (addr         . ,addr-assign)
+      (gen          . ,ir->code)
+      (asm          . ,code->string)))
   (unless (assoc phase phases)
     (error "comp: unknown phase." phase))
   (letrec ([aux (lambda (ast remaining-phases)
