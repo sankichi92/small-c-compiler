@@ -189,4 +189,21 @@
     ,@(append-map fun-def->code addr-ir)))
 
 (define (code->string code)
-  '())
+  (define (instr->string instr)
+    (match (first instr)
+      ['#:label (format "~a:" (second instr))]
+      [else
+       (format "\t~a\t~a"
+               (symbol->string (first instr))
+               (string-join (map arg->string (rest instr))
+                            ", "))]))
+  (define (arg->string arg)
+    (cond [(string? arg) arg]
+          [(symbol? arg) (symbol->string arg)]
+          [(number? arg) (number->string arg)]
+          [(eq? (first arg) '$)
+           (format "$~a" (second arg))]
+          [(eq? (first arg) '->)
+           (format "~a(~a)" (third arg) (arg->string (second arg)))]
+          [else (format "gen: unknown argument: ~a" arg)]))
+  (string-join (map instr->string code) "\n"))
