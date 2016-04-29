@@ -29,13 +29,16 @@
         (string-append "label" (number->string oldid))))
     (define (decl->ir decl)
       (match decl
-        [(stx:var-decl obj ty pos) (ir:var-decl obj)]
-        [(stx:parm-decl obj ty pos) (ir:var-decl obj)]
-        [(stx:fun-decl obj ret-ty parm-tys pos) (ir:fun-def obj '() '())]
+        [(stx:var-decl obj ty pos)
+         (list (ir:var-decl obj))]
+        [(stx:parm-decl obj ty pos)
+         (list (ir:var-decl obj))]
+        [(stx:fun-decl obj ret-ty parm-tys pos)
+         '()]
         [(stx:fun-def obj ret-ty parms body pos)
-         (let ([new-parms (map decl->ir parms)]
+         (let ([new-parms (append-map decl->ir parms)]
                [new-body (car (stmt->ir body var-maxid))])
-           (ir:fun-def obj new-parms new-body))]))
+           (list (ir:fun-def obj new-parms new-body)))]))
     (define (stmt->ir stmt [var-id '()])
       (match stmt
         ['() '()]
@@ -43,7 +46,7 @@
          (let ([dest (fresh-obj)])
            (exp->ir dest stmt))]
         [(stx:cmpd-stmt decls stmts pos)
-         (let* ([new-decls (map decl->ir decls)]
+         (let* ([new-decls (append-map decl->ir decls)]
                 [new-stmts (append-map stmt->ir stmts)]
                 [temp-decls (if (null? var-id)
                                 '()
@@ -195,4 +198,4 @@
          (list (ir:assign-stmt dest (ir:var-exp obj)))]
         [(stx:lit-exp val pos)
          (list (ir:assign-stmt dest (ir:lit-exp val)))]))
-    (map decl->ir (cdr checked-ast))))
+    (append-map decl->ir (cdr checked-ast))))
