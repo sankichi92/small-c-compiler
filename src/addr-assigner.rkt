@@ -8,26 +8,35 @@
   (define (addr-decl decl)
     (match decl
       [(ir:fun-def var parms body)
-       (let ([new-parms (if (> (length parms) 4)
-                            (begin
-                              (addr-var-decl-list (cddddr parms) 0)
-                              parms)
-                            parms)]
-             [new-body (addr-stmt body 0)])
-         (ir:fun-def var new-parms new-body))]
+       (let* ([new-parms (let ([len (length parms)]
+                               [objs (map ir:var-decl-var parms)])
+                           (map ett:set-decl-lev! objs (build-list len values))
+                           (when (> len 4)
+                                 (addr-var-decl-list (cddddr parms)))
+                           parms)]
+              [ret (addr-stmt body)]
+              [new-body (car ret)]
+              [size (- (cdr ret))])
+         (cons (ir:fun-def var new-parms new-body) size))]
       [else decl]))
-  (define (addr-stmt stmt ofs)
+  (define (addr-stmt stmt [ofs 0])
     (match stmt
       [(ir:cmpd-stmt decls stmts)
-       (let* ([ret (addr-var-decl-list decls ofs)]
-              [new-decls (car ret)]
-              [new-ofs (cdr ret)]
+       (let* ([ret-decls (addr-var-decl-list decls ofs)]
+              [new-decls (car ret-decls)]
+              [new-ofs (cdr ret-decls)]
+              [max-ofs new-ofs]
               [new-stmts (map (lambda (s)
-                                      (addr-stmt s new-ofs))
+                                (let* ([ret (addr-stmt s new-ofs)]
+                                       [new-stmt (car ret)]
+                                       [new-max-ofs (cdr ret)])
+                                  (when (< new-max-ofs max-ofs)
+                                        (set! max-ofs new-max-ofs))
+                                  new-stmt))
                               stmts)])
-         (ir:cmpd-stmt new-decls new-stmts))]
-      [else stmt]))
-  (define (addr-var-decl-list var-decls ofs)
+         (cons (ir:cmpd-stmt new-decls new-stmts) max-ofs))]
+      [else (cons stmt ofs)]))
+  (define (addr-var-decl-list var-decls [ofs 0])
     (if (null? var-decls)
         (cons '() ofs)
         (let* ([var-decl (car var-decls)]
