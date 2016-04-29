@@ -29,6 +29,7 @@ Temporary Items
 \#*\#
 
 *.tbl
+*.s
 
 tmp.c
 a.out

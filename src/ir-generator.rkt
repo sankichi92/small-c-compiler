@@ -29,13 +29,16 @@
         (string-append "label" (number->string oldid))))
     (define (decl->ir decl)
       (match decl
-        [(stx:var-decl obj ty pos) (ir:var-decl obj)]
-        [(stx:parm-decl obj ty pos) (ir:var-decl obj)]
-        [(stx:fun-decl obj ret-ty parm-tys pos) (ir:fun-def obj '() '())]
+        [(stx:var-decl obj ty pos)
+         (list (ir:var-decl obj))]
+        [(stx:parm-decl obj ty pos)
+         (list (ir:var-decl obj))]
+        [(stx:fun-decl obj ret-ty parm-tys pos)
+         '()]
         [(stx:fun-def obj ret-ty parms body pos)
-         (let ([new-parms (map decl->ir parms)]
+         (let ([new-parms (append-map decl->ir parms)]
                [new-body (car (stmt->ir body var-maxid))])
-           (ir:fun-def obj new-parms new-body))]))
+           (list (ir:fun-def obj new-parms new-body)))]))
     (define (stmt->ir stmt [var-id '()])
       (match stmt
         ['() '()]
@@ -43,7 +46,7 @@
          (let ([dest (fresh-obj)])
            (exp->ir dest stmt))]
         [(stx:cmpd-stmt decls stmts pos)
-         (let* ([new-decls (map decl->ir decls)]
+         (let* ([new-decls (append-map decl->ir decls)]
                 [new-stmts (append-map stmt->ir stmts)]
                 [temp-decls (if (null? var-id)
                                 '()
@@ -55,9 +58,7 @@
                [label2 (fresh-label)]
                [label3 (fresh-label)])
            `(,@(exp->ir test-var test)
-             ,(ir:if-stmt test-var
-                          (ir:goto-stmt label1)
-                          (ir:goto-stmt label2))
+             ,(ir:if-stmt test-var label1 label2)
              ,(ir:label-stmt label1)
              ,@(stmt->ir tbody)
              ,(ir:goto-stmt label3)
@@ -71,9 +72,7 @@
                [label3 (fresh-label)])
            `(,(ir:label-stmt label1)
              ,@(exp->ir test-var test)
-             ,(ir:if-stmt test-var
-                          (ir:goto-stmt label2)
-                          (ir:goto-stmt label3))
+             ,(ir:if-stmt test-var label2 label3)
              ,(ir:label-stmt label2)
              ,@(stmt->ir body)
              ,(ir:goto-stmt label1)
@@ -90,12 +89,14 @@
                              (exp->ir dest e))
                      exp)]
         [(stx:assign-exp left right pos)
-         (let ([left-var (fresh-obj)]
-               [right-var (fresh-obj)])
-           `(,@(exp->ir left-var left)
-             ,@(exp->ir right-var right)
-             ,(ir:assign-stmt left-var (ir:var-exp right-var))
-             ,(ir:assign-stmt dest (ir:var-exp right-var))))]
+         (if (stx:deref-exp? left)
+             (let ([left-var (fresh-obj)]
+                   [right-var (fresh-obj)])
+               `(,@(exp->ir left-var (stx:deref-exp-arg left))
+                 ,@(exp->ir right-var right)
+                 ,(ir:write-stmt left-var right-var)))
+             (let ([left-var (stx:var-exp-tgt left)])
+               `(,@(exp->ir left-var right))))]
         [(stx:lop-exp op left right pos)
          (let* ([left-var (fresh-obj)]
                 [right-var (fresh-obj)]
@@ -108,28 +109,20 @@
            (match op
              ['|| `(,@left-ir
                     ,@right-ir
-                    ,(ir:if-stmt left-var
-                                 (ir:goto-stmt label1)
-                                 (ir:goto-stmt label2))
+                    ,(ir:if-stmt left-var label1 label2)
                     ,(ir:label-stmt label1)
                     ,(ir:assign-stmt dest (ir:lit-exp 1))
                     ,(ir:goto-stmt label3)
                     ,(ir:label-stmt label2)
-                    ,(ir:if-stmt right-var
-                                 (ir:goto-stmt label1)
-                                 (ir:goto-stmt label4))
+                    ,(ir:if-stmt right-var label1 label4)
                     ,(ir:label-stmt label4)
                     ,(ir:assign-stmt dest (ir:lit-exp 0))
                     ,(ir:label-stmt label3))]
              ['&& `(,@left-ir
                     ,@right-ir
-                    ,(ir:if-stmt left-var
-                                 (ir:goto-stmt label1)
-                                 (ir:goto-stmt label2))
+                    ,(ir:if-stmt left-var label1 label2)
                     ,(ir:label-stmt label1)
-                    ,(ir:if-stmt right-var
-                                 (ir:goto-stmt label3)
-                                 (ir:goto-stmt label2))
+                    ,(ir:if-stmt right-var label3 label2)
                     ,(ir:label-stmt label3)
                     ,(ir:assign-stmt dest (ir:lit-exp 1))
                     ,(ir:goto-stmt label4)
@@ -169,9 +162,9 @@
                     ,@(exp->ir right-var right)
                     ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))]))]
         [(stx:addr-exp var pos)
-         (let ([src (fresh-obj)])
-           `(,@(exp->ir src var)
-             ,(ir:write-stmt dest src)))]
+         (let ([new-var (fresh-obj)])
+           `(,@(exp->ir new-var var)
+             ,(ir:assign-stmt dest (ir:addr-exp new-var))))]
         [(stx:deref-exp arg pos)
          (let ([src (fresh-obj)])
            `(,@(exp->ir src arg)
@@ -192,7 +185,10 @@
                `(,@new-args
                  ,(ir:call-stmt dest obj vars))))]
         [(stx:var-exp obj pos)
-         (list (ir:assign-stmt dest (ir:var-exp obj)))]
+         (let ([type (ett:decl-type obj)])
+           (if (and (list? type) (eq? (first type) 'array))
+               (list (ir:assign-stmt dest (ir:addr-exp obj)))
+               (list (ir:assign-stmt dest (ir:var-exp obj)))))]
         [(stx:lit-exp val pos)
          (list (ir:assign-stmt dest (ir:lit-exp val)))]))
-    (map decl->ir (cdr checked-ast))))
+    (append-map decl->ir (cdr checked-ast))))
