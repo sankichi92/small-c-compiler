@@ -144,7 +144,8 @@
            (cond [(and (or (eq? '+ op) (eq? '- op))
                        (stx:var-exp? left)
                        (let ([type (ett:decl-type (stx:var-exp-tgt left))])
-                         (and (list? type) (eq? 'array (first type)))))
+                         (and (list? type)
+                              (or (eq? (first type) 'array) (eq? (first type) 'pointer)))))
                   `(,@(exp->ir left-var left)
                     ,@(exp->ir right-var right)
                     ,(ir:assign-stmt offset (ir:lit-exp 4))
@@ -153,7 +154,8 @@
                  [(and (or (eq? '+ op) (eq? '- op))
                        (stx:var-exp? right)
                        (let ([type (ett:decl-type (stx:var-exp-tgt right))])
-                         (and (list? type) (eq? 'array (first type)))))
+                         (and (list? type)
+                              (or (eq? (first type) 'array) (eq? (first type) 'pointer)))))
                   `(,@(exp->ir left-var left)
                     ,@(exp->ir right-var right)
                     ,(ir:assign-stmt offset (ir:lit-exp 4))
@@ -186,8 +188,12 @@
                `(,@new-args
                  ,(ir:call-stmt dest obj vars))))]
         [(stx:var-exp obj pos)
-         (let ([type (ett:decl-type obj)])
-           (if (and (list? type) (eq? (first type) 'array))
+         (letrec ([type (ett:decl-type obj)]
+                  [array? (lambda (ty)
+                            (and (list? ty)
+                                 (or (eq? (first ty) 'array)
+                                     (array? (second ty)))))])
+           (if (array? type)
                (list (ir:assign-stmt dest (ir:addr-exp obj)))
                (list (ir:assign-stmt dest (ir:var-exp obj)))))]
         [(stx:lit-exp val pos)
