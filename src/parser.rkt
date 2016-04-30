@@ -68,9 +68,6 @@
    (whitespace (return-without-pos (small-c-lexer input-port)))
    ((eof)      (token-EOF))))
 
-(struct var-dcr (name ty pos))
-(struct fun-dcr (name ret-ty parms))
-
 (define small-c-parser
   (parser
    (start program)
@@ -95,38 +92,38 @@
     (declaration
      ((type-specifier declarator-list SEMI)
       (map (lambda (dcr)
-              (let* ([name (var-dcr-name dcr)]
-                     [ty (var-dcr-ty dcr)]
-                     [pos (var-dcr-pos dcr)]
-                     [new-ty (format-ty $1 ty)])
+              (let* ([name (first dcr)]
+                     [ty (second dcr)]
+                     [pos (third dcr)]
+                     [new-ty (format-type $1 ty)])
                 (stx:var-decl name new-ty pos)))
            $2)))
     (declarator-list
      ((declarator) (list $1))
      ((declarator-list COMMA declarator) `(,@$1 ,$3)))
     (declarator
-     ((direct-declarator) (var-dcr (car $1) (cdr $1) $1-start-pos))
-     ((* direct-declarator) (var-dcr (car $2) (cons 'pointer (cdr $2)) $1-start-pos)))
+     ((direct-declarator) (list (car $1) (cdr $1) $1-start-pos))
+     ((* direct-declarator) (list (car $2) (cons 'pointer (cdr $2)) $1-start-pos)))
     (direct-declarator
      ((ID) (cons $1 '()))
      ((ID LBBRA NUM RBBRA) (cons $1 (cons 'array $3))))
     (function-prototype
      ((type-specifier function-declarator SEMI)
-      (let* ([name (fun-dcr-name $2)]
-             [ret-ty (fun-dcr-ret-ty $2)]
-             [parms (fun-dcr-parms $2)]
-             [new-ret-ty (format-ty $1 ret-ty)]
+      (let* ([name (first $2)]
+             [ret-ty (second $2)]
+             [parms (third $2)]
+             [new-ret-ty (format-type $1 ret-ty)]
              [new-parms (map stx:parm-decl-ty parms)])
         (stx:fun-decl name new-ret-ty new-parms $1-start-pos))))
     (function-declarator
-     ((ID LPAR parameter-type-list-opt RPAR) (fun-dcr $1 '() $3))
-     ((* ID LPAR parameter-type-list-opt RPAR) (fun-dcr $2  (cons 'pointer '()) $4)))
+     ((ID LPAR parameter-type-list-opt RPAR) (list $1 '() $3))
+     ((* ID LPAR parameter-type-list-opt RPAR) (list $2  (cons 'pointer '()) $4)))
     (function-definition
      ((type-specifier function-declarator compound-statement)
-      (let* ([name (fun-dcr-name $2)]
-             [ret-ty (fun-dcr-ret-ty $2)]
-             [parms (fun-dcr-parms $2)]
-             [new-ret-ty (format-ty $1 ret-ty)])
+      (let* ([name (first $2)]
+             [ret-ty (second $2)]
+             [parms (third $2)]
+             [new-ret-ty (format-type $1 ret-ty)])
       (stx:fun-def name new-ret-ty parms $3 $1-start-pos))))
     (parameter-type-list-opt
      (() '())
@@ -136,7 +133,7 @@
      ((parameter-type-list COMMA parameter-declaration) `(,@$1 ,$3)))
     (parameter-declaration
      ((type-specifier parameter-declarator)
-      (stx:parm-decl (car $2) (format-ty $1 (cdr $2)) $2-start-pos)))
+      (stx:parm-decl (car $2) (format-type $1 (cdr $2)) $2-start-pos)))
     (parameter-declarator
      ((ID) (cons $1 '()))
      ((* ID) (cons $2 '(pointer ()))))
@@ -238,15 +235,16 @@
      ((assign-expr) (list $1))
      ((argument-expression-list COMMA assign-expr) `(,@$1 ,$3))))))
 
-(define (format-ty main sub)
+(define (format-type main sub)
   (cond [(or (null? sub) (null? (car sub)))
          main]
         [(eq? 'array (car sub))
          (list 'array main (cdr sub))]
         [(eq? 'pointer (car sub))
-         (list 'pointer (format-ty main (cdr sub)))]))
+         (list 'pointer (format-type main (cdr sub)))]))
 
-(define (append-print-fun decl-list)
+(define (parse-port port)
+  (port-count-lines! port)
   (append
     (list
       (stx:fun-decl
@@ -254,9 +252,4 @@
         'void
         (list 'int)
         '()))
-    decl-list))
-
-(define (parse-port port)
-  (port-count-lines! port)
-  (append-print-fun
     (small-c-parser (lambda () (small-c-lexer port)))))
