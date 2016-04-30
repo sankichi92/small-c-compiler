@@ -106,8 +106,8 @@
                              (if (null? args)
                                  '()
                                  (let* ([arg (car args)]
-                                        [ret (if (> num 4)
-                                                 `(,@(emit-load ($ t0) arg)
+                                        [ret (if (>= num 4)
+                                                 `(,@(emit-load t0 arg)
                                                    ,(emit sw ($ t0) ($sp (- (length args)))))
                                                  (emit-load (second ($a num)) arg))]
                                         [rest-ret (emit-args (cdr args) (add1 num))])
