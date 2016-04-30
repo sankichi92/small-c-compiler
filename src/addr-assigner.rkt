@@ -8,35 +8,36 @@
   (define (addr-decl decl)
     (match decl
       [(ir:fun-def var parms body)
-       (let* ([new-parms (let ([len (length parms)]
-                               [objs (map ir:var-decl-var parms)])
-                           (map ett:set-decl-lev! objs (build-list len values))
+       (let* ([new-parms (let ([len (length parms)])
+                           (map ett:set-decl-lev!
+                                (map ir:var-decl-var parms)
+                                (build-list len values))
                            (when (> len 4)
-                                 (addr-var-decl-list (cddddr parms)))
+                                 (addr-var-decl-list (cddddr parms) 0))
                            parms)]
-              [ret (addr-stmt body)]
+              [ret (addr-stmt body 0)]
               [new-body (car ret)]
               [size (- (cdr ret))])
          (cons (ir:fun-def var new-parms new-body) size))]
       [else decl]))
-  (define (addr-stmt stmt [ofs 0])
+  (define (addr-stmt stmt ofs)
     (match stmt
       [(ir:cmpd-stmt decls stmts)
-       (let* ([ret-decls (addr-var-decl-list decls ofs)]
-              [new-decls (car ret-decls)]
-              [new-ofs (cdr ret-decls)]
-              [max-ofs new-ofs]
+       (let* ([ret (addr-var-decl-list decls ofs)]
+              [new-decls (car ret)]
+              [new-ofs (cdr ret)]
+              [min-ofs new-ofs]
               [new-stmts (map (lambda (s)
                                 (let* ([ret (addr-stmt s new-ofs)]
                                        [new-stmt (car ret)]
-                                       [new-max-ofs (cdr ret)])
-                                  (when (< new-max-ofs max-ofs)
-                                        (set! max-ofs new-max-ofs))
+                                       [new-min-ofs (cdr ret)])
+                                  (when (< new-min-ofs min-ofs)
+                                        (set! min-ofs new-min-ofs))
                                   new-stmt))
                               stmts)])
-         (cons (ir:cmpd-stmt new-decls new-stmts) max-ofs))]
+         (cons (ir:cmpd-stmt new-decls new-stmts) min-ofs))]
       [else (cons stmt ofs)]))
-  (define (addr-var-decl-list var-decls [ofs 0])
+  (define (addr-var-decl-list var-decls ofs)
     (if (null? var-decls)
         (cons '() ofs)
         (let* ([var-decl (car var-decls)]
@@ -55,9 +56,9 @@
                (ett:set-decl-offset! obj new-ofs)
                (cons var-decl new-ofs))]
             [(and (list? type)
-                  (eq? 'array (car type)))
-             (let* ([num (caddr type)]
-                    [new-ofs (- ofs (* offset num))])
+                  (eq? (first type) 'array))
+             (let* ([num (third type)]
+                    [new-ofs (- ofs (* num offset))])
                (ett:set-decl-offset! obj (+ new-ofs offset))
                (cons var-decl new-ofs))]
             [else

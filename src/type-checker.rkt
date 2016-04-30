@@ -26,9 +26,9 @@
            (let ([ret-sym (type->symbol ret-ty)])
              (cond [(and (eq? ret-sym 'void)
                          (not (null? exp)))
-                    (tc-err pos "void function should not return a value")]
+                    (ty-check-err pos "void function should not return a value")]
                    [(not (eq? ret-sym exp))
-                    (tc-err
+                    (ty-check-err
                       pos
                       (format "incompatible returning '~a' from a function with result type '~a'" exp ret-sym))]
                    [else 'well-typed])))]
@@ -60,20 +60,20 @@
       [(cons _ _)
        (if (andmap symbol? exp)
            (list-ref exp (sub1 (length exp)))
-           (tc-err '() "exp-list is not well-typed"))]
+           (ty-check-err '() "exp-list is not well-typed"))]
       [(stx:assign-exp left right pos)
        (if (eq? left right)
            left
-           (tc-err pos (format "incompatible assigning to '~a' from '~a'" left right)))]
+           (ty-check-err pos (format "incompatible assigning to '~a' from '~a'" left right)))]
       [(stx:lop-exp op left right pos)
        (if (and (int? left)
                 (int? right))
            'int
-           (tc-err pos (format "invalid operands ('~a' and '~a')" left right)))]
+           (ty-check-err pos (format "invalid operands ('~a' and '~a')" left right)))]
       [(stx:rop-exp op left right pos)
        (if (eq? left right)
            'int
-           (tc-err pos (format "comparison between '~a' and '~a'" left right)))]
+           (ty-check-err pos (format "comparison between '~a' and '~a'" left right)))]
       [(stx:aop-exp op left right pos)
        (cond [(and (int? left)
                    (int? right))
@@ -89,24 +89,24 @@
                            'int*]
                           [(and (int**? left) (int? right))
                            'int**])])]
-             [else (tc-err pos (format "invalid operands ('~a' and '~a')" left right))])]
+             [else (ty-check-err pos (format "invalid operands ('~a' and '~a')" left right))])]
       [(stx:addr-exp var pos)
        (if (int? var)
            'int*
-           (tc-err pos (format "dereference requires int operand ('~a' invalid)" var)))]
+           (ty-check-err pos (format "dereference requires int operand ('~a' invalid)" var)))]
       [(stx:deref-exp arg pos)
        (cond [(int*? arg) 'int]
              [(int**? arg) 'int*]
-             [else (tc-err pos "indirection requires pointer operand ('~a' invalid)" arg)])]
+             [else (ty-check-err pos "indirection requires pointer operand ('~a' invalid)" arg)])]
       [(stx:fun-exp obj args pos)
        (let* ([type (ett:decl-type obj)]
-              [ret-ty (cadr type)]
+              [ret-ty (second type)]
               [arg-tys (cddr type)]
               [arg-syms (map type->symbol arg-tys)])
          (if (and (andmap symbol? args)
                   (equal? arg-syms args))
              ret-ty
-             (tc-err pos (format "invalid arguments to function call, expected '~a', have '~a'" arg-syms args))))]
+             (ty-check-err pos (format "invalid arguments to function call, expected '~a', have '~a'" arg-syms args))))]
       [(stx:var-exp obj pos)
        (type->symbol (ett:decl-type obj))]
       [(stx:lit-exp val pos) 'int]))
@@ -114,19 +114,19 @@
     (define (check-type-obj-ty type pos)
       (match type
         [(list 'array 'void _)
-         (tc-err pos "array has incomplete element type 'void'")]
+         (ty-check-err pos "array has incomplete element type 'void'")]
         [(list 'pointer 'void)
-         (tc-err pos "pointer has incomplete type 'void'")]
+         (ty-check-err pos "pointer has incomplete type 'void'")]
         [(list 'array (list 'pointer 'void) _)
-         (tc-err pos "array has incomplete element type 'void *'")]
+         (ty-check-err pos "array has incomplete element type 'void *'")]
         [(cons 'fun args)
          (andmap (lambda (arg)
                    (check-type-obj-ty arg pos))
                  args)]
         [else #t]))
-    (let* ([type (ett:decl-type obj)])
+    (let ([type (ett:decl-type obj)])
       (if (eq? type 'void)
-          (tc-err pos "variable has incomplete type 'void'")
+          (ty-check-err pos "variable has incomplete type 'void'")
           (if (check-type-obj-ty type pos)
               'well-typed
               obj))))
@@ -149,7 +149,7 @@
     (eq? exp 'int*))
   (define (int**? exp)
     (eq? exp 'int**))
-  (define (tc-err pos msg)
+  (define (ty-check-err pos msg)
     (error '|type check error| (err-msg pos msg)))
   (let ([decls (traverse type-check-decl type-check-stmt type-check-exp ast)])
     (if (andmap well-typed? decls)

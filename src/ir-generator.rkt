@@ -86,7 +86,7 @@
         ['() '()]
         [(cons _ _)
          (append-map (lambda (e)
-                             (exp->ir dest e))
+                       (exp->ir dest e))
                      exp)]
         [(stx:assign-exp left right pos)
          (if (stx:deref-exp? left)
@@ -142,7 +142,7 @@
            (cond [(and (or (eq? '+ op) (eq? '- op))
                        (stx:var-exp? left)
                        (let ([type (ett:decl-type (stx:var-exp-tgt left))])
-                         (and (list? type) (eq? 'array (car type)))))
+                         (and (list? type) (eq? 'array (first type)))))
                   `(,@(exp->ir left-var left)
                     ,@(exp->ir right-var right)
                     ,(ir:assign-stmt offset (ir:lit-exp 4))
@@ -151,7 +151,7 @@
                  [(and (or (eq? '+ op) (eq? '- op))
                        (stx:var-exp? right)
                        (let ([type (ett:decl-type (stx:var-exp-tgt right))])
-                         (and (list? type) (eq? 'array (car type)))))
+                         (and (list? type) (eq? 'array (first type)))))
                   `(,@(exp->ir left-var left)
                     ,@(exp->ir right-var right)
                     ,(ir:assign-stmt offset (ir:lit-exp 4))

@@ -22,6 +22,8 @@
                [last-env (cdr rest-ret)])
           (cons (cons new-decl (car rest-ret)) last-env))))
   (define (resolve-decl env lev decl)
+    (define (redef-err pos name)
+      (resolve-err pos (format "redifinition of '~a'" name)))
     (match decl
       [(stx:var-decl name ty pos)
        (let ([obj (env name)])
@@ -120,6 +122,8 @@
            (resolve-exp env lev exp))
          exp-list))
   (define (resolve-exp env lev exp)
+    (define (unknown-err pos name)
+      (resolve-err pos (format "unknown identifier '~a'" name)))
     (match exp
       ['() '()]
       [(cons _ _) (resolve-exp-list env lev exp)]
@@ -152,7 +156,7 @@
              (let ([kind (ett:decl-kind obj)]
                    [type (ett:decl-type obj)])
                (if (or (eq? kind 'var) (eq? kind 'parm))
-                   (nr-err pos (format "called object type '~a' is not a function or function pointer" type))
+                   (resolve-err pos (format "called object type '~a' is not a function or function pointer" type))
                    (stx:fun-exp obj new-args pos)))
              (unknown-err pos name)))]
       [(stx:var-exp tgt pos)
@@ -161,14 +165,10 @@
              (let ([kind (ett:decl-kind obj)]
                    [type (ett:decl-type obj)])
                (if (or (eq? kind 'fun) (eq? kind 'proto))
-                   (nr-err pos (format "called object type '~a' is not a variable or pointer" type))
+                   (resolve-err pos (format "called object type '~a' is not a variable or pointer" type))
                    (stx:var-exp obj pos)))
              (unknown-err pos tgt)))]
       [else exp]))
-  (define (nr-err pos msg)
+  (define (resolve-err pos msg)
     (error '|name resolve error| (err-msg pos msg)))
-  (define (redef-err pos name)
-    (nr-err pos (format "redifinition of '~a'" name)))
-  (define (unknown-err pos name)
-    (nr-err pos (format "unknown identifier '~a'" name)))
   (car (resolve-decl-list initial-env 0 ast)))

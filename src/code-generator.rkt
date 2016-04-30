@@ -8,11 +8,6 @@
 
 (define (ir->code addr-ir)
   (define offset 4)
-  (define (a num)
-    (let* ([num-str (number->string num)]
-           [str (string-append "a" num-str)]
-           [sym (string->symbol str)])
-      sym))
   (define ($ r) `($ ,r))
   (define (-> p i) `(-> ,p ,i))
   (define (emit-label lbl)
@@ -21,55 +16,28 @@
     `(,op ,@args))
   (define (ofs-addr obj)
     (-> ($ fp) (ett:decl-offset obj)))
+  (define ($sp num)
+    (-> ($ sp) (* num offset)))
+  (define ($a num)
+    (let* ([num-str (number->string num)]
+           [str (string-append "a" num-str)]
+           [sym (string->symbol str)])
+      ($ sym)))
+  (define (emit-load-store tgt obj instr)
+    (match obj
+      [(ett:decl name _ 'var _ '())
+       (list (emit la ($ t0) (symbol->string name))
+             (emit instr ($ tgt) (-> ($ t0) 0)))]
+      [(ett:decl _ lev 'parm _ '())
+       (if (eq? instr 'lw)
+           (list (emit move ($ tgt) ($a lev)))
+           (list (emit move ($a lev) ($ tgt))))]
+      [else
+       (list (emit instr ($ tgt) (ofs-addr obj)))]))
   (define (emit-load dest obj)
-    (if (null? (ett:decl-offset obj))
-        (let ([name (ett:decl-name obj)]
-              [lev (ett:decl-lev obj)]
-              [kind (ett:decl-kind obj)])
-          (match kind
-            ['var
-             (list (emit la ($ t0) (symbol->string name))
-                   (emit lw ($ dest) (-> ($ t0) 0)))]
-            ['parm
-             (list (emit move ($ dest) ($ (a lev))))]))
-        (list (emit lw ($ dest) (ofs-addr obj)))))
+    (emit-load-store dest obj lw))
   (define (emit-store src obj)
-    (if (null? (ett:decl-offset obj))
-        (let ([name (ett:decl-name obj)]
-              [lev (ett:decl-lev obj)]
-              [kind (ett:decl-kind obj)])
-          (match kind
-            ['var
-             (list (emit la ($ t0) (symbol->string name))
-                   (emit sw ($ src) (-> ($ t0) 0)))]
-            ['parm
-             (list (emit move ($ (a lev)) ($ src)))]))
-        (list (emit sw ($ src) (ofs-addr obj)))))
-  (define (emit-sl-args num instr)
-    (if (= num 0)
-        '()
-        (let* ([new-num (if (> num 4)
-                            3
-                            (sub1 num))]
-               [ret (emit instr ($ (a new-num)) (-> ($ sp) (* (+ new-num 2) offset)))]
-               [rest-ret (emit-sl-args new-num instr)])
-          (cons ret rest-ret))))
-  (define (emit-store-args num)
-    (emit-sl-args num sw))
-  (define (emit-load-args num)
-    (emit-sl-args num lw))
-  (define (emit-args args [num 0])
-    (if (null? args)
-        '()
-        (let* ([arg (car args)]
-               [ret (if (> num 4)
-                        `(,@(emit-load ($ t0) arg)
-                          ,(emit sw
-                                 ($ t0)
-                                 (-> ($ sp) ((* (- (length args)) offset)))))
-                        (emit-load (a num) arg))]
-               [rest-ret (emit-args (cdr args) (add1 num))])
-          (append ret rest-ret))))
+    (emit-load-store src obj sw))
   (define (var-decl->code decl)
     (match decl
       [(ir:var-decl var)
@@ -96,12 +64,12 @@
                          frame-size)])
          `(,(emit-label (symbol->string (ett:decl-name var)))
            ,(emit subu ($ sp) ($ sp) frame)
-           ,(emit sw ($ ra) (-> ($ sp) offset))
-           ,(emit sw ($ fp) (-> ($ sp) 0))
+           ,(emit sw ($ ra) ($sp 1))
+           ,(emit sw ($ fp) ($sp 0))
            ,(emit addiu ($ fp) ($ sp) (- frame rest-parms-size offset))
-           ,@(stmt->code body parms-length)
-           ,(emit lw ($ fp) (-> ($ sp) 0))
-           ,(emit lw ($ ra) (-> ($ sp) offset))
+           ,@(stmt->code body (if (> parms-length 4) 4 parms-length))
+           ,(emit lw ($ fp) ($sp 0))
+           ,(emit lw ($ ra) ($sp 1))
            ,(emit addiu ($ sp) ($ sp) frame)
            ,(emit jr ($ ra))))]
       [else '()]))
@@ -127,13 +95,30 @@
       [(ir:goto-stmt label)
        (list (emit j label))]
       [(ir:call-stmt dest tgt vars)
-       `(,@(emit-store-args args-size)
-         ,@(emit-args vars)
-         ,(emit jal (ett:decl-name tgt))
-         ,@(emit-load-args args-size)
-         ,@(if (eq? (second (ett:decl-type tgt)) 'void)
-               '()
-               (emit-store v0 dest)))]
+       (letrec ([emit-load-store-arg (lambda (num instr)
+                                       (emit instr ($a num) ($sp (+ num 2))))]
+                [emit-load-arg (lambda (num)
+                                 (emit-load-store-arg num lw))]
+                [emit-store-arg (lambda (num)
+                                  (emit-load-store-arg num sw))]
+                [arg-list (build-list args-size values)]
+                [emit-args (lambda (args num)
+                             (if (null? args)
+                                 '()
+                                 (let* ([arg (car args)]
+                                        [ret (if (> num 4)
+                                                 `(,@(emit-load ($ t0) arg)
+                                                   ,(emit sw ($ t0) ($sp (- (length args)))))
+                                                 (emit-load (second ($a num)) arg))]
+                                        [rest-ret (emit-args (cdr args) (add1 num))])
+                                   (append ret rest-ret))))])
+         `(,@(map emit-store-arg arg-list)
+           ,@(emit-args vars 0)
+           ,(emit jal (ett:decl-name tgt))
+           ,@(map emit-load-arg arg-list)
+           ,@(if (eq? (second (ett:decl-type tgt)) 'void)
+                 '()
+                 (emit-store v0 dest))))]
       [(ir:ret-stmt var)
        (emit-load v0 var)]
       [(ir:print-stmt var)
