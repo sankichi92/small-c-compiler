@@ -16,12 +16,11 @@
     (check-equal?
       (string->ir "int a;")
       (list
-        (fun-def (decl 'print 0 'proto '(fun void int)) '() '())
         (var-decl (decl 'a 0 'var 'int)))
       "Simple")
 
     (check-equal?
-      (cdr (string->ir "void f(){;}"))
+      (string->ir "void f(){;}")
       (list
         (fun-def
           (decl 'f 0 'fun '(fun void))
@@ -30,7 +29,7 @@
       "Statement")
 
     (check-equal?
-      (cdr (string->ir "int f(int a){return a;}"))
+      (string->ir "int f(int a){return a;}")
       (list
         (fun-def
           (decl 'f 0 'fun '(fun int int))
