@@ -2,7 +2,7 @@
 #lang racket
 (require data/queue
          (prefix-in cfg: "cfg.rkt"))
-(provide analysis solve)
+(provide analysis solve get-property)
 
 (struct analysis
   (direction     ;; 'forward or 'backward
@@ -78,3 +78,14 @@
       (fixed-point wl
                    init-prop
                    init-prop))))
+
+;; 解析結果から特定のプロパティを取得
+;;   kind: before(直前), after(直後), both(両方)
+(define (get-property solution stmt #:kind [kind 'both])
+  (let ([b-prop (dict-ref (car solution) stmt)]
+        [a-prop (dict-ref (cdr solution) stmt)])
+    (case kind
+      [(both) (cons b-prop a-prop)]
+      [(before) b-prop]
+      [(after) a-prop]
+      [else (error "unknown kind:" kind)])))
