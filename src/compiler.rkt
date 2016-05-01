@@ -1,11 +1,11 @@
 #lang racket
 (require "parser.rkt"
          "name-resolver.rkt"
-         "dereference-checker.rkt"
+         "deref-checker.rkt"
          "type-checker.rkt"
-         "ir-generator.rkt"
+         "ir-gen.rkt"
          "addr-assigner.rkt"
-         "code-generator.rkt")
+         "code-gen.rkt")
 (provide compile test-file test-string)
 
 (define (comp port #:phase [phase 'asm])

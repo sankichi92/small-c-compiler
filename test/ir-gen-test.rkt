@@ -4,14 +4,14 @@
          "../src/ir.rkt"
          "../src/compiler.rkt")
 (require rackunit/text-ui)
-(provide ir-generator-tests)
+(provide ir-gen-tests)
 
 (define (string->ir str)
   (test-string str #:phase 'ir))
 
-(define ir-generator-tests
+(define ir-gen-tests
   (test-suite
-    "Tests for ir-generator.rkt"
+    "Tests for ir-gen.rkt"
 
     (check-equal?
       (string->ir "int a;")
@@ -44,4 +44,4 @@
 
     ))
 
-(run-tests ir-generator-tests)
+(run-tests ir-gen-tests)

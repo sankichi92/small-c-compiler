@@ -2,7 +2,7 @@
 (require rackunit
          "../src/compiler.rkt")
 (require rackunit/text-ui)
-(provide dereference-checker-tests)
+(provide deref-checker-tests)
 
 (define (check-string str)
   (test-string str #:phase 'deref-check))
@@ -10,9 +10,9 @@
 (define (check-file fname)
   (test-file fname #:phase 'deref-check))
 
-(define dereference-checker-tests
+(define deref-checker-tests
   (test-suite
-    "Tests for dereference-checker.rkt"
+    "Tests for deref-checker.rkt"
 
     (check-exn
       exn:fail?
@@ -66,4 +66,4 @@
 
   ))
 
-(run-tests dereference-checker-tests)
+(run-tests deref-checker-tests)
