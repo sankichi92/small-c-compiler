@@ -156,6 +156,10 @@
         (unless idx (error "target label not found:" lbl))
         (set-add! u-lbls lbl)
         idx))
+    (set-for-each
+      u-lbls
+      (lambda (l)
+        (add-edge 0 (find-target-idx l))))
     (for-each ;; 基本ブロックリスト(とそのインデックス)を先頭から順に処理
       (lambda (bb i)
         (let* ([stmts (cfg:bblock-stmts bb)]
