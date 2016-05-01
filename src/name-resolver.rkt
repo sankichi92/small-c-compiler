@@ -12,15 +12,14 @@
           decl
           (env name))))
   (define (resolve-decl-list env lev decl-list)
-    (if (null? decl-list)
-        (cons '() env)
-        (let* ([decl (car decl-list)]
-               [ret (resolve-decl env lev decl)]
-               [new-decl (car ret)]
-               [new-env (cdr ret)]
-               [rest-ret (resolve-decl-list new-env lev (cdr decl-list))]
-               [last-env (cdr rest-ret)])
-          (cons (cons new-decl (car rest-ret)) last-env))))
+    (foldl (lambda (decl acc)
+             (let* ([ret (resolve-decl (cdr acc) lev decl)]
+                    [new-decl (car ret)]
+                    [new-env (cdr ret)])
+               (cons (append (car acc) (list new-decl))
+                     new-env)))
+           (cons '() env)
+           decl-list))
   (define (resolve-decl env lev decl)
     (define (redef-err pos name)
       (resolve-err pos (format "redifinition of '~a'" name)))

@@ -95,25 +95,26 @@
       [(ir:goto-stmt label)
        (list (emit j label))]
       [(ir:call-stmt dest tgt vars)
-       (letrec ([emit-load-store-arg (lambda (num instr)
-                                       (emit instr ($a num) ($sp (+ num 2))))]
-                [emit-load-arg (lambda (num)
-                                 (emit-load-store-arg num lw))]
-                [emit-store-arg (lambda (num)
-                                  (emit-load-store-arg num sw))]
-                [arg-list (build-list args-size values)]
-                [emit-args (lambda (args num)
-                             (if (null? args)
-                                 '()
-                                 (let* ([arg (car args)]
-                                        [ret (if (>= num 4)
-                                                 `(,@(emit-load t0 arg)
-                                                   ,(emit sw ($ t0) ($sp (- (length args)))))
-                                                 (emit-load (second ($a num)) arg))]
-                                        [rest-ret (emit-args (cdr args) (add1 num))])
-                                   (append ret rest-ret))))])
+       (let* ([emit-load-store-arg (lambda (num instr)
+                                     (emit instr ($a num) ($sp (+ num 2))))]
+              [emit-load-arg (lambda (num)
+                               (emit-load-store-arg num lw))]
+              [emit-store-arg (lambda (num)
+                                (emit-load-store-arg num sw))]
+              [arg-list (build-list args-size values)])
          `(,@(map emit-store-arg arg-list)
-           ,@(emit-args vars 0)
+           ,@(car (foldl (lambda (arg res)
+                           (let ([i (cdr res)])
+                             (cons
+                               (append
+                                 (car res)
+                                 (if (>= i 4)
+                                     `(,@(emit-load t0 arg)
+                                       ,(emit sw ($ t0) ($sp (- i (length vars)))))
+                                     (emit-load (second ($a i)) arg)))
+                               (add1 i))))
+                         (cons '() 0)
+                         vars))
            ,(emit jal (ett:decl-name tgt))
            ,@(map emit-load-arg arg-list)
            ,@(if (eq? (second (ett:decl-type tgt)) 'void)

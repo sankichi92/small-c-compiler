@@ -38,30 +38,29 @@
          (cons (ir:cmpd-stmt new-decls new-stmts) min-ofs))]
       [else (cons stmt ofs)]))
   (define (addr-var-decl-list var-decls ofs)
-    (if (null? var-decls)
-        (cons '() ofs)
-        (let* ([var-decl (car var-decls)]
-               [ret (addr-var-decl var-decl ofs)]
-               [new-var-decl (car ret)]
-               [new-ofs (cdr ret)]
-               [rest-ret (addr-var-decl-list (cdr var-decls) new-ofs)]
-               [last-ofs (cdr rest-ret)])
-          (cons (cons new-var-decl (car rest-ret)) last-ofs))))
-  (define (addr-var-decl var-decl ofs)
-    (let* ([obj (ir:var-decl-var var-decl)]
-           [kind (ett:decl-kind obj)]
-           [type (ett:decl-type obj)])
-      (cond [(eq? kind 'parm)
-             (let ([new-ofs (+ ofs offset)])
-               (ett:set-decl-offset! obj new-ofs)
-               (cons var-decl new-ofs))]
-            [(and (list? type)
-                  (eq? (first type) 'array))
-             (let* ([num (third type)]
-                    [new-ofs (- ofs (* num offset))])
-               (ett:set-decl-offset! obj (+ new-ofs offset))
-               (cons var-decl new-ofs))]
-            [else
-             (ett:set-decl-offset! obj ofs)
-             (cons var-decl (- ofs offset))])))
+    (define (addr-var-decl var-decl ofs)
+      (let* ([obj (ir:var-decl-var var-decl)]
+             [kind (ett:decl-kind obj)]
+             [type (ett:decl-type obj)])
+        (cond [(eq? kind 'parm)
+               (let ([new-ofs (+ ofs offset)])
+                 (ett:set-decl-offset! obj new-ofs)
+                 (cons var-decl new-ofs))]
+              [(and (list? type)
+                    (eq? (first type) 'array))
+               (let* ([num (third type)]
+                      [new-ofs (- ofs (* num offset))])
+                 (ett:set-decl-offset! obj (+ new-ofs offset))
+                 (cons var-decl new-ofs))]
+              [else
+               (ett:set-decl-offset! obj ofs)
+               (cons var-decl (- ofs offset))])))
+    (foldl (lambda (var-decl acc)
+             (let* ([ret (addr-var-decl var-decl (cdr acc))]
+                    [new-var-decl (car ret)]
+                    [new-ofs (cdr ret)])
+               (cons (append (car acc) (list new-var-decl))
+                     new-ofs)))
+           (cons '() ofs)
+           var-decls))
   (map addr-decl ir))
