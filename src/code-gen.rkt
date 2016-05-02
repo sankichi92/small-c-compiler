@@ -174,7 +174,7 @@
   `(,(emit .data)
     ,@(append-map var-decl->code addr-ir)
     ,(emit-label "nl")
-    ,(emit .asciiz "\"\n\"")
+    ,(emit .asciiz "\"\\n\"")
     ,(emit .text)
     ,(emit .globl "main")
     ,@(append-map fun-def->code addr-ir)))
