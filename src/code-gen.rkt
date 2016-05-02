@@ -40,10 +40,8 @@
     (emit-load-store src obj sw))
   (define (var-decl->code decl)
     (match decl
-      [(ir:var-decl var)
-       (let* ([name (ett:decl-name var)]
-              [name-str (symbol->string name)]
-              [type (ett:decl-type var)])
+      [(ir:var-decl (ett:decl name _ _ type _))
+       (let* ([name-str (symbol->string name)])
          (if (and (list? type) (eq? (first type) 'array))
              (list (emit-label name-str)
                    `(,.word ,@(build-list (third type) values)))
@@ -159,17 +157,14 @@
          `(,@(emit-load t0 left)
            ,@(emit-load t1 right)
            ,(emit instr ($ dest) ($ t0) ($ t1))))]
-      [(ir:addr-exp var)
-       (if (null? (ett:decl-offset var))
-           (let ([name (ett:decl-name var)]
-                 [lev (ett:decl-lev var)]
-                 [kind (ett:decl-kind var)])
-             (match kind
-               ['var
-                (list (emit la ($ dest) (symbol->string name)))]
-               ['parm
-                (list (emit addiu ($ dest) ($ fp) (* (add1 lev) offset)))]))
-           (list (emit addiu ($ dest) ($ fp) (ett:decl-offset var))))]
+      [(ir:addr-exp (ett:decl name lev kind _ ofs))
+       (if (null? ofs)
+           (match kind
+             ['var
+              (list (emit la ($ dest) (symbol->string name)))]
+             ['parm
+              (list (emit addiu ($ dest) ($ fp) (* (add1 lev) offset)))])
+           (list (emit addiu ($ dest) ($ fp) ofs)))]
       [else (list 'error)]))
   `(,(emit .data)
     ,@(append-map var-decl->code addr-ir)
