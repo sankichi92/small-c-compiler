@@ -164,8 +164,7 @@
               (list (emit la ($ dest) (symbol->string name)))]
              ['parm
               (list (emit addiu ($ dest) ($ fp) (* (add1 lev) offset)))])
-           (list (emit addiu ($ dest) ($ fp) ofs)))]
-      [else (list 'error)]))
+           (list (emit addiu ($ dest) ($ fp) ofs)))]))
   `(,(emit .data)
     ,@(append-map var-decl->code addr-ir)
     ,(emit-label "nl")
