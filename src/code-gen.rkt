@@ -26,8 +26,8 @@
   (define (emit-load-store tgt obj instr)
     (match obj
       [(ett:decl name _ 'var _ '())
-       (list (emit la ($ t0) (symbol->string name))
-             (emit instr ($ tgt) (-> ($ t0) 0)))]
+       (list (emit la ($ t2) (symbol->string name))
+             (emit instr ($ tgt) (-> ($ t2) 0)))]
       [(ett:decl _ lev 'parm _ '())
        (if (eq? instr 'lw)
            (list (emit move ($ tgt) ($a lev)))
