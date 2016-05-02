@@ -100,8 +100,7 @@
     (match decl
       [(ir:var-decl var) (list var)]
       [(ir:fun-def _ parms body)
-       (set-union (map ir:var-decl-var parms)
-                  (stmt->vs body))]
+       (stmt->vs body)]
       [else '()]))
   (define (stmt->vs stmt)
     (match stmt
