@@ -101,7 +101,7 @@
       [(stx:deref-exp arg pos)
        (cond [(int*? arg) 'int]
              [(int**? arg) 'int*]
-             [else (ty-check-err pos "indirection requires pointer operand ('~a' invalid)" arg)])]
+             [else (ty-check-err pos (format "indirection requires pointer operand ('~a' invalid)" arg))])]
       [(stx:fun-exp obj args pos)
        (let* ([type (ett:decl-type obj)]
               [ret-ty (second type)]
