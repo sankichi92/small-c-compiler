@@ -68,7 +68,7 @@
 ;; 基本ブロックの先頭にあたるラベル付き文をleaderと呼ぶ．
 ;; leader集合を見つけて返す
 ;;   ラベル付き文のリスト -> leader集合
-(define (find-leaders l-ir u-lbls)
+(define (find-leaders l-ir)
   (define (find-target lbl)
     (first (memf (lambda (l-stmt)
                    (set-member? (car l-stmt) lbl))
@@ -101,12 +101,10 @@
               [(ir:ret-stmt _)
                (cons #t leaders2)]
               [(ir:call-stmt _ tgt _)
-               (begin
-                 (set-add! u-lbls (ett:decl-name tgt))
-                 (cons #f
-                       (set-add
-                        leaders2
-                        (find-target (ett:decl-name tgt)))))]
+               (cons #t
+                     (set-add
+                      leaders2
+                      (find-target (ett:decl-name tgt))))]
               [else
                (cons #f leaders2)])))
         (cons #t '())
@@ -181,6 +179,10 @@
              (let ([ti (find-target-idx label)])
                (add-edge i ti))]
             [(ir:ret-stmt _) (add-edge i end-idx)]
+            [(ir:call-stmt _ tgt _)
+             (let ([fi (find-target-idx (ett:decl-name tgt))])
+               (add-edge 0 fi)
+               (add-edge i (+ i 1)))]
             [else (add-edge i (+ i 1))])))
       bbs idx)
     bbv))
@@ -198,7 +200,7 @@
 (define (ir->cfg ir)
   (let* ([used-labels (mutable-seteq)]
          [l-ir (coalesce-label ir)]
-         [leaders (find-leaders l-ir used-labels)]
+         [leaders (find-leaders l-ir)]
          [bbs (split l-ir leaders)]
          [e-bbs (set-edges bbs used-labels)])
     (gc-label e-bbs used-labels)))
