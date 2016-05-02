@@ -1,7 +1,8 @@
 ;;;; Generic Data Flow Analysis (a.k.a Monotone Framework)
 #lang racket
 (require data/queue
-         (prefix-in cfg: "cfg.rkt"))
+         (prefix-in cfg: "cfg.rkt")
+         "cfg-gen.rkt")
 (provide analysis solve get-property)
 
 (struct analysis
@@ -19,8 +20,9 @@
 ;; データフロー解析を実行
 ;; analysis, CFG -> 解析結果
 ;;   解析結果: (辞書(stmt -> 直前のプロパティ) . 辞書(stmt -> 直後のプロパティ))
-(define (solve anlys cfg)
-  (let ([direction    (analysis-direction    anlys)]
+(define (solve anlys ir)
+  (let ([cfg          (ir->cfg               ir)]
+        [direction    (analysis-direction    anlys)]
         [transfer     (analysis-transfer     anlys)]
         [prop-compare (analysis-prop-compare anlys)]
         [lub          (analysis-lub          anlys)]

@@ -70,7 +70,7 @@
       [(ir:assign-stmt var _)
        (store-update s var (list stmt))]
       [(ir:write-stmt dest src)
-       (store-update-all-int s src)]
+       (store-update-all-int s stmt)]
       [(ir:read-stmt dest _)
        (store-update s dest '(any))]
       [(ir:call-stmt dest _ vars)
