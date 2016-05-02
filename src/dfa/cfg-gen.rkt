@@ -103,7 +103,10 @@
               [(ir:call-stmt _ tgt _)
                (begin
                  (set-add! u-lbls (ett:decl-name tgt))
-                 (cons #f leaders2))]
+                 (cons #f
+                       (set-add
+                        leaders2
+                        (find-target (ett:decl-name tgt)))))]
               [else
                (cons #f leaders2)])))
         (cons #t '())
