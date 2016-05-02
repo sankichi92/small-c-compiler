@@ -60,7 +60,7 @@
       [(cons _ _)
        (if (andmap symbol? exp)
            (list-ref exp (sub1 (length exp)))
-           (ty-check-err '() "exp-list is not well-typed"))]
+           (error '|type check error| "exp-list is not well-typed"))]
       [(stx:assign-exp left right pos)
        (if (eq? left right)
            left
