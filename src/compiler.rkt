@@ -5,6 +5,7 @@
          "type-checker.rkt"
          "ir-gen.rkt"
          "addr-assigner.rkt"
+         "opt/constant-folder.rkt"
          "code-gen.rkt")
 (provide compile test-file test-string)
 
@@ -15,6 +16,7 @@
       (deref-check  . ,dereference-check)
       (ty-check     . ,type-check)
       (ir           . ,ast->ir)
+      (opt          . ,constant-fold)
       (addr         . ,addr-assign)
       (gen          . ,ir->code)
       (asm          . ,code->string)))
