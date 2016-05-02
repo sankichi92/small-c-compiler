@@ -23,7 +23,7 @@
 ;; store, 変数名 -> store
 (define store-remove dict-remove)
 
-(define (store-update-all-int store def)
+(define (store-add-all-int store def)
   (define (store-update-int store i)
     (if i
         (let ([var (dict-iterate-key store i)])
@@ -70,11 +70,16 @@
       [(ir:assign-stmt var _)
        (store-update s var (list stmt))]
       [(ir:write-stmt dest src)
-       (store-update-all-int s stmt)]
+       (store-add-all-int s stmt)]
       [(ir:read-stmt dest _)
        (store-update s dest '(any))]
-      [(ir:call-stmt dest _ vars)
-       (store-update s dest '(any))]
+      [(ir:call-stmt dest tgt _)
+       (let ([args (cddr (ett:decl-type tgt))])
+         (if (ormap (lambda (a)
+                      (and (list? a) (eq? (car a) 'pointer)))
+                    args)
+             (store-update (store-add-all-int s 'any) dest '(any))
+             (store-update s dest '(any))))]
       [else s]))
   (define (kill s)
     (match stmt
