@@ -179,11 +179,11 @@
                  ,(ir:print-stmt var)))
              (let* ([vars '()]
                     [new-args (append-map
-                                  (lambda (e)
-                                    (let ([var (fresh-obj)])
-                                      (set! vars (append vars (list var)))
-                                      (exp->ir var e)))
-                                  args)])
+                                (lambda (e)
+                                  (let ([var (fresh-obj)])
+                                    (set! vars (append vars (list var)))
+                                    (exp->ir var e)))
+                                args)])
                `(,@new-args
                  ,(ir:call-stmt dest obj vars))))]
         [(stx:var-exp obj pos)
