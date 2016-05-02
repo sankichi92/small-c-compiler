@@ -125,6 +125,9 @@
       [(ir:print-stmt var)
        `(,@(emit-load a0 var)
          ,(emit li ($ v0) 1)
+         ,(emit syscall)
+         ,(emit la ($ a0) 'nl)
+         ,(emit li ($ v0) 4)
          ,(emit syscall))]
       [(ir:cmpd-stmt decls stmts)
        (append-map (lambda (s)
@@ -170,6 +173,8 @@
       [else (list 'error)]))
   `(,(emit .data)
     ,@(append-map var-decl->code addr-ir)
+    ,(emit-label "nl")
+    ,(emit .asciiz "\"\n\"")
     ,(emit .text)
     ,(emit .globl "main")
     ,@(append-map fun-def->code addr-ir)))
