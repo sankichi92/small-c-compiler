@@ -98,7 +98,6 @@
 (define (ir->vs ir)
   (define (decl->vs decl)
     (match decl
-      [(ir:var-decl var) (list var)]
       [(ir:fun-def _ parms body)
        (stmt->vs body)]
       [else '()]))
