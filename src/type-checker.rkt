@@ -78,18 +78,22 @@
        (cond [(and (int? left)
                    (int? right))
               'int]
-             [(match op
-                ['+ (cond [(or (and (int*? left) (int? right))
-                               (and (int? left) (int*? right)))
-                           'int*]
-                          [(or (and (int**? left) (int? right))
-                               (and (int? left) (int**? right)))
-                           'int**])]
-                ['- (cond [(and (int*? left) (int? right))
-                           'int*]
-                          [(and (int**? left) (int? right))
-                           'int**])])]
-             [else (ty-check-err pos (format "invalid operands ('~a' and '~a')" left right))])]
+             [(or (and (eq? op '+)
+                       (or (and (int*? left) (int? right))
+                           (and (int? left) (int*? right))))
+                  (and (eq? op '-)
+                       (int*? left)
+                       (int? right)))
+              'int*]
+             [(or (and (eq? op '+)
+                       (or (and (int**? left) (int? right))
+                           (and (int? left) (int**? right))))
+                  (and (eq? op '-)
+                       (int**? left)
+                       (int? right)))
+              'int**]
+             [else
+              (ty-check-err pos (format "invalid operands ('~a' and '~a')" left right))])]
       [(stx:addr-exp var pos)
        (if (int? var)
            'int*
