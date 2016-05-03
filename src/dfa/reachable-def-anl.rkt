@@ -17,7 +17,7 @@
 (define (store-lookup s v)
   (dict-ref s v '()))
 
-;; store, 変数名，到達可能定義集合 -> store
+;; store, 変数名, 到達可能定義集合 -> store
 (define store-update dict-set)
 
 ;; store, 変数名 -> store
@@ -62,8 +62,8 @@
          bot-store
          ss))
 
-;; 伝達関数，forward store update
-;; stmt，store -> store
+;; 伝達関数, forward store update
+;; stmt, store -> store
 (define (transfer stmt entry-store)
   (define (gen s)
     (match stmt

@@ -9,8 +9,8 @@
   (direction     ;; 'forward or 'backward
    transfer      ;; 伝達関数: stmt, プロパティ -> プロパティ
    prop-compare  ;; プロパティの比較関数:
-                 ;;   順序がつくなら，-1, 0, 1のいずれかを返す
-                 ;;   順序がつかないなら，#fを返す
+                 ;;   順序がつくなら, -1, 0, 1のいずれかを返す
+                 ;;   順序がつかないなら, #fを返す
    lub           ;; プロパティのleast upper bound関数
    bot           ;; 最小プロパティ
    init          ;; 初期プロパティ
@@ -28,20 +28,20 @@
         [lub          (analysis-lub          anlys)]
         [bot          (analysis-bot          anlys)]
         [init         (analysis-init         anlys)])
-    ;; プロパティ辞書からstmtに対応するプロパティを取得．なければbotを返す
+    ;; プロパティ辞書からstmtに対応するプロパティを取得.なければbotを返す
     (define (get-prop es stmt)
       (dict-ref es stmt bot))
-    ;; ワークリストwlが空になるまでプロパティ辞書entries, exitsの更新を繰り返す．
-    ;; directionがforwardの場合，entriesは直前のプロパティの辞書，exitsは直後の
-    ;; プロパティの辞書．backwardの場合は逆．
-    ;; ワークリストが空になった時点のentries, exitsが不動点，すなわち解析結果．
-    ;; ワークリストは (stmt . プロパティ)のキュー．stmtの直前のプロパティへの
-    ;; 追加を意味する．
+    ;; ワークリストwlが空になるまでプロパティ辞書entries, exitsの更新を繰り返す.
+    ;; directionがforwardの場合, entriesは直前のプロパティの辞書, exitsは直後の
+    ;; プロパティの辞書.backwardの場合は逆.
+    ;; ワークリストが空になった時点のentries, exitsが不動点, すなわち解析結果.
+    ;; ワークリストは (stmt . プロパティ)のキュー.stmtの直前のプロパティへの
+    ;; 追加を意味する.
     (define (fixed-point wl entries exits)
       (if (queue-empty? wl)
           (if (eq? direction 'forward)
-              (cons entries exits)  ;; 直前=entries，直後=exits
-              (cons exits entries)) ;; 直前=exits，直後=entries
+              (cons entries exits)  ;; 直前=entries, 直後=exits
+              (cons exits entries)) ;; 直前=exits, 直後=entries
           (let* ([w (dequeue! wl)]
                  [stmt (car w)]
                  [old-entry (get-prop entries stmt)]

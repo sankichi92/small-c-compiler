@@ -4,8 +4,8 @@
          (prefix-in cfg: "cfg.rkt"))
 (provide ir->cfg)
 
-;; ir中の各ラベルを直後の文へくっつける．
-;; くっつけて出来るコンスペア (ラベル集合 . stmt) を以降「ラベル付き文」と呼ぶ．
+;; ir中の各ラベルを直後の文へくっつける.
+;; くっつけて出来るコンスペア (ラベル集合 . stmt) を以降「ラベル付き文」と呼ぶ.
 ;;   stmtリスト -> ラベル付き文のリスト
 (define (coalesce-label ir)
   (define (ir->stmts ir)
@@ -65,7 +65,7 @@
             stmts)))
   (coalesce-stmts `(BEGIN ,@(ir->stmts ir) END)))
 
-;; 基本ブロックの先頭にあたるラベル付き文をleaderと呼ぶ．
+;; 基本ブロックの先頭にあたるラベル付き文をleaderと呼ぶ.
 ;; leader集合を見つけて返す
 ;;   ラベル付き文のリスト -> leader集合
 (define (find-leaders l-ir)
@@ -123,7 +123,7 @@
           '()))
 
 ;; leader情報をつかってラベル付き文のリストを基本ブロックに分割
-;;   ラベル付き文のリスト，leader集合 -> bblockのリスト
+;;   ラベル付き文のリスト, leader集合 -> bblockのリスト
 (define (split l-ir leaders)
   (reverse
     (map (compose1 make-bblock reverse)
@@ -135,7 +135,7 @@
                 '()
                 l-ir))))
 
-;; 制御フローに従い，基本ブロック間にエッジを張る
+;; 制御フローに従い, 基本ブロック間にエッジを張る
 ;;   bblockのリスト, u-lbls -> エッジの張られたbblockのベクタ(つまりCFG)
 ;;     u-lbls: 実際に使用されたラベルを記録するためのmutable set
 (define (set-edges bbs u-lbls)
@@ -153,8 +153,8 @@
     (define (add-edge i j)
       (add-succ (vector-ref bbv i) j)
       (add-pred (vector-ref bbv j) i))
-    ;; 先頭ラベルにlblを含む基本ブロックを探し，そのインデックスを返す
-    ;; また，見つかれば使用ラベル集合u-lblsにそのラベルを追加
+    ;; 先頭ラベルにlblを含む基本ブロックを探し, そのインデックスを返す
+    ;; また, 見つかれば使用ラベル集合u-lblsにそのラベルを追加
     (define (find-target-idx lbl)
       (let ([idx (cdr (assf (lambda (lbls) (set-member? lbls lbl))
                             labels->idx))])
@@ -169,7 +169,7 @@
       (lambda (bb i)
         (let* ([stmts (cfg:bblock-stmts bb)]
                [last-stmt (vector-ref stmts (- (vector-length stmts) 1))])
-          (match last-stmt ;; 基本ブロックの末尾の文で場合分けしながら，適切なエッジを張る
+          (match last-stmt ;; 基本ブロックの末尾の文で場合分けしながら, 適切なエッジを張る
             ['BEGIN
              (let ([mi (find-target-idx 'main)])
                (add-edge i mi))]
