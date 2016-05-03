@@ -14,12 +14,12 @@
     "Tests for addr-assigner.rkt"
 
     (check-equal?
-      (assign-string "void f(int a,int b,int c,int *d,int *e,int *f){int x,y[4];;}")
+      (assign-string "void main(int a,int b,int c,int *d,int *e,int *f){int x,y[4];}")
       (list
        (cons
          (fun-def
           (decl
-           'f
+           'main
            0
            'fun
            '(fun void int int int (pointer int) (pointer int) (pointer int)))
