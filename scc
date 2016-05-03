@@ -1,6 +1,7 @@
 #! /usr/bin/env racket
 #lang racket
-(require "src/compiler.rkt")
+(require racket/exn
+         "src/compiler.rkt")
 
 (define inputs (vector->list
                  (current-command-line-arguments)))
@@ -37,7 +38,7 @@
                        (lambda (e)
                          (close-output-port p)
                          (delete-file assem)
-                         (eprintf "~a:~a~%" input e)
+                         (eprintf "~a: ~a~%" input (exn->string e))
                          (newline (current-error-port)))])
         (with-redirect-output p (lambda () (compile input)))
         (close-output-port p))))
