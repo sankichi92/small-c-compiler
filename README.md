@@ -6,7 +6,7 @@ Small-C Compiler converts [Small-C](https://en.wikipedia.org/wiki/Small-C) into 
 
 Install [Racket](https://racket-lang.org/).
 
-Then you can compile a Small-C file (`foo.sc`) into an assembly file (`foo.s`) by the following command.
+Then you can compile a Small-C file (`foo.sc`) and output an assembly file (`foo.s`) by the following command.
 
 ```
 $ ./scc foo.sc
