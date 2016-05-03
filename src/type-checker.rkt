@@ -121,7 +121,7 @@
          (ty-check-err pos "array has incomplete element type 'void'")]
         [(list 'pointer 'void)
          (ty-check-err pos "pointer has incomplete type 'void'")]
-        [(list 'array (list 'pointer 'void) _)
+        [(list 'pointer (list 'array 'void _))
          (ty-check-err pos "array has incomplete element type 'void *'")]
         [(cons 'fun args)
          (andmap (lambda (arg)
