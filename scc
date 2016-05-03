@@ -1,0 +1,45 @@
+#! /usr/bin/env racket
+#lang racket
+(require "src/compiler.rkt")
+
+(define inputs (vector->list
+                 (current-command-line-arguments)))
+
+(when (= (length inputs) 0)
+  (eprintf "no input file specified~%"))
+
+(define assems
+  (map (lambda (input)
+         (let ((r (regexp-match #rx"^(.+)\\.sc$" input)))
+           (if r
+               (format "~a.s" (second r))
+               (begin
+                 (eprintf "input file must be *.sc~%")
+                 (exit 1)))))
+       inputs))
+
+(define (with-redirect-output port thunk)
+  (let ([stdout (current-output-port)])
+    (current-output-port port)
+    (with-handlers ([exn:fail?
+                     (lambda (e)
+                       (current-output-port stdout)
+                       (raise e))])
+      (thunk)
+      (current-output-port stdout))))
+
+(for-each
+  (lambda (input assem)
+    (let ([p (open-output-file assem
+                               #:mode 'text
+                               #:exists 'replace)])
+      (with-handlers ([exn:fail?
+                       (lambda (e)
+                         (close-output-port p)
+                         (delete-file assem)
+                         (eprintf "~a:~a~%" input e)
+                         (newline (current-error-port)))])
+        (with-redirect-output p (lambda () (compile input)))
+        (close-output-port p))))
+  inputs
+  assems)
