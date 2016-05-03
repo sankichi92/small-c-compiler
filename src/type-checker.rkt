@@ -27,22 +27,23 @@
              (cond [(and (eq? ret-sym 'void)
                          (not (null? exp)))
                     (ty-check-err pos "void function should not return a value")]
-                   [(not (eq? ret-sym exp))
+                   [(and (not (eq? ret-sym 'void))
+                         (not (eq? ret-sym exp)))
                     (ty-check-err
                       pos
                       (format "incompatible returning '~a' from a function with result type '~a'" exp ret-sym))]
                    [else 'well-typed])))]
       [(stx:if-els-stmt test tbody ebody pos)
-       (if (and (int? test)
-                (well-typed? (type-check-stmt tbody ret-ty))
-                (well-typed? (type-check-stmt ebody ret-ty)))
-           'well-typed
-           stmt)]
+       (if (int? test)
+           (if (and (well-typed? (type-check-stmt tbody ret-ty))
+                    (well-typed? (type-check-stmt ebody ret-ty)))
+               'well-typed
+               stmt)
+           (ty-check-err pos (format "invalid testing ('~a')" test)))]
       [(stx:while-stmt test body pos)
-       (if (and (int? test)
-                (well-typed? (type-check-stmt body ret-ty)))
-           'well-typed
-           stmt)]
+       (if (int? test)
+           (type-check-stmt body ret-ty)
+           (ty-check-err pos (format "invalid testing ('~a')" test)))]
       [(stx:cmpd-stmt decls stmts pos)
        (if (and (andmap well-typed? decls)
                 (andmap well-typed?
@@ -60,7 +61,7 @@
       [(cons _ _)
        (if (andmap symbol? exp)
            (list-ref exp (sub1 (length exp)))
-           (ty-check-err '() "exp-list is not well-typed"))]
+           (error '|type check error| "exp-list is not well-typed"))]
       [(stx:assign-exp left right pos)
        (if (eq? left right)
            left
@@ -78,18 +79,22 @@
        (cond [(and (int? left)
                    (int? right))
               'int]
-             [(match op
-                ['+ (cond [(or (and (int*? left) (int? right))
-                               (and (int? left) (int*? right)))
-                           'int*]
-                          [(or (and (int**? left) (int? right))
-                               (and (int? left) (int**? right)))
-                           'int**])]
-                ['- (cond [(and (int*? left) (int? right))
-                           'int*]
-                          [(and (int**? left) (int? right))
-                           'int**])])]
-             [else (ty-check-err pos (format "invalid operands ('~a' and '~a')" left right))])]
+             [(or (and (eq? op '+)
+                       (or (and (int*? left) (int? right))
+                           (and (int? left) (int*? right))))
+                  (and (eq? op '-)
+                       (int*? left)
+                       (int? right)))
+              'int*]
+             [(or (and (eq? op '+)
+                       (or (and (int**? left) (int? right))
+                           (and (int? left) (int**? right))))
+                  (and (eq? op '-)
+                       (int**? left)
+                       (int? right)))
+              'int**]
+             [else
+              (ty-check-err pos (format "invalid operands ('~a' and '~a')" left right))])]
       [(stx:addr-exp var pos)
        (if (int? var)
            'int*
@@ -97,10 +102,10 @@
       [(stx:deref-exp arg pos)
        (cond [(int*? arg) 'int]
              [(int**? arg) 'int*]
-             [else (ty-check-err pos "indirection requires pointer operand ('~a' invalid)" arg)])]
+             [else (ty-check-err pos (format "indirection requires pointer operand ('~a' invalid)" arg))])]
       [(stx:fun-exp obj args pos)
        (let* ([type (ett:decl-type obj)]
-              [ret-ty (second type)]
+              [ret-ty (type->symbol (second type))]
               [arg-tys (cddr type)]
               [arg-syms (map type->symbol arg-tys)])
          (if (and (andmap symbol? args)
@@ -117,7 +122,7 @@
          (ty-check-err pos "array has incomplete element type 'void'")]
         [(list 'pointer 'void)
          (ty-check-err pos "pointer has incomplete type 'void'")]
-        [(list 'array (list 'pointer 'void) _)
+        [(list 'pointer (list 'array 'void _))
          (ty-check-err pos "array has incomplete element type 'void *'")]
         [(cons 'fun args)
          (andmap (lambda (arg)

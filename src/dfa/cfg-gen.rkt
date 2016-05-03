@@ -85,7 +85,11 @@
                                (set-add leaders l-stmt)
                                leaders)])
             (match stmt
-              ['BEGIN (cons #t leaders2)]
+              ['BEGIN
+               (cons #t
+                     (set-add
+                      leaders2
+                      (find-target 'main)))]
               ['END (cons #f (set-add leaders2 l-stmt))]
               [(ir:if-stmt _ tlabel elabel)
                (cons #t

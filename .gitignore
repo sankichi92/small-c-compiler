@@ -35,3 +35,6 @@ tmp.c
 a.out
 compiled
 src/scc
+test/program/basic
+test/program/advanced
+test/program/error

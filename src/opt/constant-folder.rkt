@@ -71,10 +71,8 @@
                            (ir:lit-exp-val folded-exp)
                            #f))]
                     [(ir:write-stmt _ src)
-                     (if (eq? (ett:decl-kind var) 'parm)
-                         #f
-                         (let ([prop (dfa:get-property solution def #:kind 'before)])
-                            (fold-var prop src)))]
+                     (let ([prop (dfa:get-property solution def #:kind 'before)])
+                       (fold-var prop src))]
                     ['any #f])))
             #f)))
     (map fold-decl ir)))

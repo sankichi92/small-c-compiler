@@ -1,6 +1,7 @@
 #lang racket
 (require (prefix-in ett: "entity.rkt")
-         (prefix-in ir:  "ir.rkt"))
+         (prefix-in ir:  "ir.rkt")
+         "utils.rkt")
 (provide addr-assign)
 
 (define (addr-assign ir)
@@ -46,10 +47,12 @@
                (let ([new-ofs (+ ofs offset)])
                  (ett:set-decl-offset! obj new-ofs)
                  (cons var-decl new-ofs))]
-              [(and (list? type)
-                    (eq? (first type) 'array))
-               (let* ([num (third type)]
-                      [new-ofs (- ofs (* num offset))])
+              [(array? type)
+               (letrec ([num (lambda (ty)
+                               (if (eq? (first ty) 'array)
+                                   (third ty)
+                                   (num (second ty))))]
+                        [new-ofs (- ofs (* (num type) offset))])
                  (ett:set-decl-offset! obj (+ new-ofs offset))
                  (cons var-decl new-ofs))]
               [else

@@ -13,8 +13,7 @@
       [(stx:assign-exp left right pos)
        (if (or (stx:deref-exp? left)
                (and (stx:var-exp? left)
-                    (let* ([decl (stx:var-exp-tgt left)]
-                           [type (ett:decl-type decl)])
+                    (let ([type (ett:decl-type (stx:var-exp-tgt left))])
                       (not (and (list? type)
                                 (eq? (first type) 'array))))))
            exp

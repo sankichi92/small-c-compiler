@@ -26,8 +26,8 @@
   (define (emit-load-store tgt obj instr)
     (match obj
       [(ett:decl name _ 'var _ '())
-       (list (emit la ($ t0) (symbol->string name))
-             (emit instr ($ tgt) (-> ($ t0) 0)))]
+       (list (emit la ($ t2) (symbol->string name))
+             (emit instr ($ tgt) (-> ($ t2) 0)))]
       [(ett:decl _ lev 'parm _ '())
        (if (eq? instr 'lw)
            (list (emit move ($ tgt) ($a lev)))
@@ -38,12 +38,15 @@
     (emit-load-store dest obj lw))
   (define (emit-store src obj)
     (emit-load-store src obj sw))
+  (define (asm-footer frame-size)
+    (list (emit lw ($ fp) ($sp 0))
+          (emit lw ($ ra) ($sp 1))
+          (emit addiu ($ sp) ($ sp) frame-size)
+          (emit jr ($ ra))))
   (define (var-decl->code decl)
     (match decl
-      [(ir:var-decl var)
-       (let* ([name (ett:decl-name var)]
-              [name-str (symbol->string name)]
-              [type (ett:decl-type var)])
+      [(ir:var-decl (ett:decl name _ _ type _))
+       (let* ([name-str (symbol->string name)])
          (if (and (list? type) (eq? (first type) 'array))
              (list (emit-label name-str)
                    `(,.word ,@(build-list (third type) values)))
@@ -58,22 +61,19 @@
               [rest-parms-size (if (> parms-length 4)
                                    (- parms-size (* offset 4))
                                    0)]
-              [frame-size (+ parms-size local-size (* offset 2))]
-              [frame (if (< frame-size 24)
-                         24
-                         frame-size)])
+              [min-frame-size (+ parms-size local-size (* offset 2))]
+              [frame-size (if (< min-frame-size 24)
+                              24
+                              min-frame-size)])
          `(,(emit-label (symbol->string (ett:decl-name var)))
-           ,(emit subu ($ sp) ($ sp) frame)
+           ,(emit subu ($ sp) ($ sp) frame-size)
            ,(emit sw ($ ra) ($sp 1))
            ,(emit sw ($ fp) ($sp 0))
-           ,(emit addiu ($ fp) ($ sp) (- frame rest-parms-size offset))
-           ,@(stmt->code body (if (> parms-length 4) 4 parms-length))
-           ,(emit lw ($ fp) ($sp 0))
-           ,(emit lw ($ ra) ($sp 1))
-           ,(emit addiu ($ sp) ($ sp) frame)
-           ,(emit jr ($ ra))))]
+           ,(emit addiu ($ fp) ($ sp) (- frame-size rest-parms-size offset))
+           ,@(stmt->code body (if (> parms-length 4) 4 parms-length) frame-size)
+           ,@(asm-footer frame-size)))]
       [else '()]))
-  (define (stmt->code stmt args-size)
+  (define (stmt->code stmt args-size frame-size)
     (match stmt
       [(ir:assign-stmt var exp)
        `(,@(exp->code t0 exp)
@@ -121,14 +121,18 @@
                  '()
                  (emit-store v0 dest))))]
       [(ir:ret-stmt var)
-       (emit-load v0 var)]
+       (append (emit-load v0 var)
+               (asm-footer frame-size))]
       [(ir:print-stmt var)
        `(,@(emit-load a0 var)
          ,(emit li ($ v0) 1)
+         ,(emit syscall)
+         ,(emit la ($ a0) 'nl)
+         ,(emit li ($ v0) 4)
          ,(emit syscall))]
       [(ir:cmpd-stmt decls stmts)
        (append-map (lambda (s)
-                     (stmt->code s args-size))
+                     (stmt->code s args-size frame-size))
                    stmts)]))
   (define (exp->code dest exp)
     (match exp
@@ -156,20 +160,18 @@
          `(,@(emit-load t0 left)
            ,@(emit-load t1 right)
            ,(emit instr ($ dest) ($ t0) ($ t1))))]
-      [(ir:addr-exp var)
-       (if (null? (ett:decl-offset var))
-           (let ([name (ett:decl-name var)]
-                 [lev (ett:decl-lev var)]
-                 [kind (ett:decl-kind var)])
-             (match kind
-               ['var
-                (list (emit la ($ dest) (symbol->string name)))]
-               ['parm
-                (list (emit addiu ($ dest) ($ fp) (* (add1 lev) offset)))]))
-           (list (emit addiu ($ dest) ($ fp) (ett:decl-offset var))))]
-      [else (list 'error)]))
+      [(ir:addr-exp (ett:decl name lev kind _ ofs))
+       (if (null? ofs)
+           (match kind
+             ['var
+              (list (emit la ($ dest) (symbol->string name)))]
+             ['parm
+              (list (emit addiu ($ dest) ($ fp) (* (add1 lev) offset)))])
+           (list (emit addiu ($ dest) ($ fp) ofs)))]))
   `(,(emit .data)
     ,@(append-map var-decl->code addr-ir)
+    ,(emit-label "nl")
+    ,(emit .asciiz "\"\\n\"")
     ,(emit .text)
     ,(emit .globl "main")
     ,@(append-map fun-def->code addr-ir)))

@@ -1,7 +1,8 @@
 #lang racket
 (require (prefix-in stx: "syntax.rkt")
          (prefix-in ett: "entity.rkt")
-         (prefix-in ir:  "ir.rkt"))
+         (prefix-in ir:  "ir.rkt")
+         "utils.rkt")
 (provide ast->ir)
 
 (define (ast->ir checked-ast)
@@ -90,12 +91,10 @@
                      exp)]
         [(stx:assign-exp left right pos)
          (if (stx:deref-exp? left)
-             (let ([left-var (fresh-obj)]
-                   [right-var (fresh-obj)])
-               `(,@(exp->ir left-var (stx:deref-exp-arg left))
-                 ,@(exp->ir right-var right)
-                 ,(ir:write-stmt left-var right-var)
-                 ,(ir:assign-stmt dest (ir:var-exp right-var))))
+             (let ([left-var (fresh-obj)])
+               `(,@(exp->ir dest right)
+                 ,@(exp->ir left-var (stx:deref-exp-arg left))
+                 ,(ir:write-stmt left-var dest)))
              (let ([left-var (stx:var-exp-tgt left)])
                `(,@(exp->ir left-var right)
                  ,(ir:assign-stmt dest (ir:var-exp left-var)))))]
@@ -110,20 +109,20 @@
                 [right-ir (exp->ir right-var right)])
            (match op
              ['|| `(,@left-ir
-                    ,@right-ir
                     ,(ir:if-stmt left-var label1 label2)
                     ,(ir:label-stmt label1)
                     ,(ir:assign-stmt dest (ir:lit-exp 1))
                     ,(ir:goto-stmt label3)
                     ,(ir:label-stmt label2)
+                    ,@right-ir
                     ,(ir:if-stmt right-var label1 label4)
                     ,(ir:label-stmt label4)
                     ,(ir:assign-stmt dest (ir:lit-exp 0))
                     ,(ir:label-stmt label3))]
              ['&& `(,@left-ir
-                    ,@right-ir
                     ,(ir:if-stmt left-var label1 label2)
                     ,(ir:label-stmt label1)
+                    ,@right-ir
                     ,(ir:if-stmt right-var label3 label2)
                     ,(ir:label-stmt label3)
                     ,(ir:assign-stmt dest (ir:lit-exp 1))
@@ -166,9 +165,8 @@
                     ,@(exp->ir right-var right)
                     ,(ir:assign-stmt dest (ir:aop-exp op left-var right-var)))]))]
         [(stx:addr-exp var pos)
-         (let ([new-var (fresh-obj)])
-           `(,@(exp->ir new-var var)
-             ,(ir:assign-stmt dest (ir:addr-exp new-var))))]
+         (let ([src (stx:var-exp-tgt var)])
+           (list (ir:assign-stmt dest (ir:addr-exp src))))]
         [(stx:deref-exp arg pos)
          (let ([src (fresh-obj)])
            `(,@(exp->ir src arg)
@@ -180,19 +178,15 @@
                  ,(ir:print-stmt var)))
              (let* ([vars '()]
                     [new-args (append-map
-                                  (lambda (e)
-                                    (let ([var (fresh-obj)])
-                                      (set! vars (append vars (list var)))
-                                      (exp->ir var e)))
-                                  args)])
+                                (lambda (e)
+                                  (let ([var (fresh-obj)])
+                                    (set! vars (append vars (list var)))
+                                    (exp->ir var e)))
+                                args)])
                `(,@new-args
                  ,(ir:call-stmt dest obj vars))))]
         [(stx:var-exp obj pos)
-         (letrec ([type (ett:decl-type obj)]
-                  [array? (lambda (ty)
-                            (and (list? ty)
-                                 (or (eq? (first ty) 'array)
-                                     (array? (second ty)))))])
+         (let ([type (ett:decl-type obj)])
            (if (array? type)
                (list (ir:assign-stmt dest (ir:addr-exp obj)))
                (list (ir:assign-stmt dest (ir:var-exp obj)))))]
