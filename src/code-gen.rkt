@@ -47,7 +47,7 @@
     (match decl
       [(ir:var-decl (ett:decl name _ _ type _))
        (let* ([name-str (symbol->string name)])
-         (if (and (list? type) (eq? (first type) 'array))
+         (if (array? type)
              (list (emit-label name-str)
                    `(,.word ,@(build-list (third type) values)))
              (list (emit-label name-str)

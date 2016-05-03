@@ -14,8 +14,7 @@
        (if (or (stx:deref-exp? left)
                (and (stx:var-exp? left)
                     (let ([type (ett:decl-type (stx:var-exp-tgt left))])
-                      (not (and (list? type)
-                                (eq? (first type) 'array))))))
+                      (not (array? type)))))
            exp
            (deref-check-err pos "expression is not assignable"))]
       [(stx:addr-exp var pos)
