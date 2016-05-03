@@ -105,7 +105,7 @@
              [else (ty-check-err pos (format "indirection requires pointer operand ('~a' invalid)" arg))])]
       [(stx:fun-exp obj args pos)
        (let* ([type (ett:decl-type obj)]
-              [ret-ty (second type)]
+              [ret-ty (type->symbol (second type))]
               [arg-tys (cddr type)]
               [arg-syms (map type->symbol arg-tys)])
          (if (and (andmap symbol? args)
