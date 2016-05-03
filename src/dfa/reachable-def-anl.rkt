@@ -105,7 +105,7 @@
     (match stmt
       [(ir:cmpd-stmt decls stmts)
        (set-union (map ir:var-decl-var decls)
-                  (apply set-union (map stmt->vs stmts)))]
+                  (append-map stmt->vs stmts))]
       [else '()]))
   (apply set-union (map decl->vs ir)))
 
