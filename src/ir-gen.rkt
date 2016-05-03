@@ -1,7 +1,8 @@
 #lang racket
 (require (prefix-in stx: "syntax.rkt")
          (prefix-in ett: "entity.rkt")
-         (prefix-in ir:  "ir.rkt"))
+         (prefix-in ir:  "ir.rkt")
+         "utils.rkt")
 (provide ast->ir)
 
 (define (ast->ir checked-ast)
@@ -185,11 +186,7 @@
                `(,@new-args
                  ,(ir:call-stmt dest obj vars))))]
         [(stx:var-exp obj pos)
-         (letrec ([type (ett:decl-type obj)]
-                  [array? (lambda (ty)
-                            (and (list? ty)
-                                 (or (eq? (first ty) 'array)
-                                     (array? (second ty)))))])
+         (let ([type (ett:decl-type obj)])
            (if (array? type)
                (list (ir:assign-stmt dest (ir:addr-exp obj)))
                (list (ir:assign-stmt dest (ir:var-exp obj)))))]
