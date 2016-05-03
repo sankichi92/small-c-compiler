@@ -38,6 +38,11 @@
     (emit-load-store dest obj lw))
   (define (emit-store src obj)
     (emit-load-store src obj sw))
+  (define (asm-footer frame-size)
+    (list (emit lw ($ fp) ($sp 0))
+          (emit lw ($ ra) ($sp 1))
+          (emit addiu ($ sp) ($ sp) frame-size)
+          (emit jr ($ ra))))
   (define (var-decl->code decl)
     (match decl
       [(ir:var-decl (ett:decl name _ _ type _))
@@ -56,22 +61,19 @@
               [rest-parms-size (if (> parms-length 4)
                                    (- parms-size (* offset 4))
                                    0)]
-              [frame-size (+ parms-size local-size (* offset 2))]
-              [frame (if (< frame-size 24)
-                         24
-                         frame-size)])
+              [min-frame-size (+ parms-size local-size (* offset 2))]
+              [frame-size (if (< min-frame-size 24)
+                              24
+                              min-frame-size)])
          `(,(emit-label (symbol->string (ett:decl-name var)))
-           ,(emit subu ($ sp) ($ sp) frame)
+           ,(emit subu ($ sp) ($ sp) frame-size)
            ,(emit sw ($ ra) ($sp 1))
            ,(emit sw ($ fp) ($sp 0))
-           ,(emit addiu ($ fp) ($ sp) (- frame rest-parms-size offset))
-           ,@(stmt->code body (if (> parms-length 4) 4 parms-length))
-           ,(emit lw ($ fp) ($sp 0))
-           ,(emit lw ($ ra) ($sp 1))
-           ,(emit addiu ($ sp) ($ sp) frame)
-           ,(emit jr ($ ra))))]
+           ,(emit addiu ($ fp) ($ sp) (- frame-size rest-parms-size offset))
+           ,@(stmt->code body (if (> parms-length 4) 4 parms-length) frame-size)
+           ,@(asm-footer frame-size)))]
       [else '()]))
-  (define (stmt->code stmt args-size)
+  (define (stmt->code stmt args-size frame-size)
     (match stmt
       [(ir:assign-stmt var exp)
        `(,@(exp->code t0 exp)
@@ -119,7 +121,8 @@
                  '()
                  (emit-store v0 dest))))]
       [(ir:ret-stmt var)
-       (emit-load v0 var)]
+       (append (emit-load v0 var)
+               (asm-footer frame-size))]
       [(ir:print-stmt var)
        `(,@(emit-load a0 var)
          ,(emit li ($ v0) 1)
@@ -129,7 +132,7 @@
          ,(emit syscall))]
       [(ir:cmpd-stmt decls stmts)
        (append-map (lambda (s)
-                     (stmt->code s args-size))
+                     (stmt->code s args-size frame-size))
                    stmts)]))
   (define (exp->code dest exp)
     (match exp
