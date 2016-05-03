@@ -27,7 +27,8 @@
              (cond [(and (eq? ret-sym 'void)
                          (not (null? exp)))
                     (ty-check-err pos "void function should not return a value")]
-                   [(not (eq? ret-sym exp))
+                   [(and (not (eq? ret-sym 'void))
+                         (not (eq? ret-sym exp)))
                     (ty-check-err
                       pos
                       (format "incompatible returning '~a' from a function with result type '~a'" exp ret-sym))]
