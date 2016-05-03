@@ -76,7 +76,7 @@
       [(ir:call-stmt dest tgt _)
        (let ([args (cddr (ett:decl-type tgt))])
          (if (ormap (lambda (a)
-                      (and (list? a) (eq? (car a) 'pointer)))
+                      (and (list? a) (eq? (first a) 'pointer)))
                     args)
              (store-update (store-add-all-int s 'any) dest '(any))
              (store-update s dest '(any))))]

@@ -139,12 +139,15 @@
         [(stx:aop-exp op left right pos)
          (let ([left-var (fresh-obj)]
                [right-var (fresh-obj)]
-               [offset (fresh-obj)])
+               [offset (fresh-obj)]
+               [ptr-or-arr? (lambda (ty)
+                              (and (list? ty)
+                                   (or (eq? (first ty) 'pointer)
+                                       (eq? (first ty) 'array))))])
            (cond [(and (or (eq? '+ op) (eq? '- op))
                        (stx:var-exp? left)
                        (let ([type (ett:decl-type (stx:var-exp-tgt left))])
-                         (and (list? type)
-                              (or (eq? (first type) 'array) (eq? (first type) 'pointer)))))
+                         (ptr-or-arr? type)))
                   `(,@(exp->ir left-var left)
                     ,@(exp->ir right-var right)
                     ,(ir:assign-stmt offset (ir:lit-exp 4))
@@ -153,8 +156,7 @@
                  [(and (or (eq? '+ op) (eq? '- op))
                        (stx:var-exp? right)
                        (let ([type (ett:decl-type (stx:var-exp-tgt right))])
-                         (and (list? type)
-                              (or (eq? (first type) 'array) (eq? (first type) 'pointer)))))
+                         (ptr-or-arr? type)))
                   `(,@(exp->ir left-var left)
                     ,@(exp->ir right-var right)
                     ,(ir:assign-stmt offset (ir:lit-exp 4))
