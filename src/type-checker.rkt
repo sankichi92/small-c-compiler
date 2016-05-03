@@ -37,12 +37,12 @@
                 (well-typed? (type-check-stmt tbody ret-ty))
                 (well-typed? (type-check-stmt ebody ret-ty)))
            'well-typed
-           stmt)]
+           (ty-check-err pos (format "invalid testing ('~a')" test)))]
       [(stx:while-stmt test body pos)
        (if (and (int? test)
                 (well-typed? (type-check-stmt body ret-ty)))
            'well-typed
-           stmt)]
+           (ty-check-err pos (format "invalid testing ('~a')" test)))]
       [(stx:cmpd-stmt decls stmts pos)
        (if (and (andmap well-typed? decls)
                 (andmap well-typed?
