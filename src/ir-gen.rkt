@@ -110,20 +110,20 @@
                 [right-ir (exp->ir right-var right)])
            (match op
              ['|| `(,@left-ir
-                    ,@right-ir
                     ,(ir:if-stmt left-var label1 label2)
                     ,(ir:label-stmt label1)
                     ,(ir:assign-stmt dest (ir:lit-exp 1))
                     ,(ir:goto-stmt label3)
                     ,(ir:label-stmt label2)
+                    ,@right-ir
                     ,(ir:if-stmt right-var label1 label4)
                     ,(ir:label-stmt label4)
                     ,(ir:assign-stmt dest (ir:lit-exp 0))
                     ,(ir:label-stmt label3))]
              ['&& `(,@left-ir
-                    ,@right-ir
                     ,(ir:if-stmt left-var label1 label2)
                     ,(ir:label-stmt label1)
+                    ,@right-ir
                     ,(ir:if-stmt right-var label3 label2)
                     ,(ir:label-stmt label3)
                     ,(ir:assign-stmt dest (ir:lit-exp 1))
