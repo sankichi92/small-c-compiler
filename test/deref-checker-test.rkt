@@ -56,12 +56,12 @@
 
     (check-not-exn
       (lambda ()
-        (check-file "program/test.sc"))
+        (check-file "pgm/test.sc"))
       "test.sc")
 
     (check-not-exn
       (lambda ()
-        (check-file "program/sort.sc"))
+        (check-file "pgm/sort.sc"))
       "sort.sc")
 
   ))

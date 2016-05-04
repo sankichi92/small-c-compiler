@@ -107,7 +107,7 @@
       "smpd-stmt scope")
 
     (check-equal?
-      (resolve-file "program/test.sc")
+      (resolve-file "pgm/test.sc")
       (list
        (fun-decl (decl 'print 0 'proto '(fun void int)) 'void '(int) '())
        (fun-def

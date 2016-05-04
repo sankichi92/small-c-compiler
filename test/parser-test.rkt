@@ -210,7 +210,7 @@
       "Syntax sugar: &e1[e2] -> (e1 + e2)")
 
     (check-equal?
-      (parse-file "program/test.sc")
+      (parse-file "pgm/test.sc")
       (list
        (fun-decl 'print 'void '(int) '())
        (fun-def

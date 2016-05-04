@@ -75,12 +75,12 @@
 
     (check-pred
       well-typed?
-      (car (check-file "program/test.sc"))
+      (car (check-file "pgm/test.sc"))
       "test.sc")
 
     (check-pred
       well-typed?
-      (car (check-file "program/sort.sc"))
+      (car (check-file "pgm/sort.sc"))
       "sort.sc")
 
   ))
